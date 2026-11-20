@@ -141,7 +141,7 @@ class TestCrmLeadRainbowmanMessages(TestCrmCommon):
             msg_25messages = self._set_won_get_rainbowman_message(lead_25messages, self.user_sales_manager)
             self.assertEqual(
                 msg_25messages,
-                'Phew, that took some effort — but you nailed it. Good job!',
+                'Phew, that took some effort but you nailed it. Good job!',
                 'Win with 25 messages on the counter',
             )
 

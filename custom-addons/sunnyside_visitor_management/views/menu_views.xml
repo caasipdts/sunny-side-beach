@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Top-Level Root Application Menu -->
+    <menuitem id="menu_sunnyside_root"
+              name="Sunnyside Beach"
+              sequence="20"
+              web_icon="sunnyside_visitor_management,static/description/icon.png"/>
+
+    <!-- 1. Management Dashboard (Top Priority Menu) -->
+    <menuitem id="menu_sunnyside_dashboard"
+              name="Dashboard"
+              parent="menu_sunnyside_root"
+              action="action_sunnyside_dashboard"
+              sequence="5"/>
+
+    <!-- 2. Operations Submenu -->
+    <menuitem id="menu_sunnyside_operations"
+              name="Operations"
+              parent="menu_sunnyside_root"
+              sequence="10"/>
+
+    <menuitem id="menu_sunnyside_checkin_wizard"
+              name="New Check-in"
+              parent="menu_sunnyside_operations"
+              action="action_sunnyside_checkin_wizard"
+              sequence="5"/>
+
+    <menuitem id="menu_sunnyside_seating_dashboard"
+              name="Seating Management"
+              parent="menu_sunnyside_operations"
+              action="action_sunnyside_seating_dashboard"
+              sequence="7"/>
+
+    <menuitem id="menu_sunnyside_visits"
+              name="Visits"
+              parent="menu_sunnyside_operations"
+              action="action_sunnyside_visit"
+              sequence="10"/>
+
+    <menuitem id="menu_sunnyside_bookings"
+              name="Bookings"
+              parent="menu_sunnyside_operations"
+              action="action_sunnyside_booking"
+              sequence="15"/>
+
+    <menuitem id="menu_sunnyside_visitors"
+              name="Visitors"
+              parent="menu_sunnyside_operations"
+              action="action_sunnyside_visitor"
+              sequence="20"/>
+
+    <!-- 3. Reporting Submenu -->
+    <menuitem id="menu_sunnyside_reporting"
+              name="Reporting"
+              parent="menu_sunnyside_root"
+              sequence="50"/>
+
+    <menuitem id="menu_sunnyside_report_visits"
+              name="Visits Analysis"
+              parent="menu_sunnyside_reporting"
+              action="action_sunnyside_visit_reporting"
+              sequence="10"/>
+
+    <menuitem id="menu_sunnyside_report_bookings"
+              name="Seating &amp; Bookings Analysis"
+              parent="menu_sunnyside_reporting"
+              action="action_sunnyside_booking_reporting"
+              sequence="20"/>
+
+    <menuitem id="menu_sunnyside_report_payments"
+              name="Financial Collections Analysis"
+              parent="menu_sunnyside_reporting"
+              action="action_sunnyside_payment_reporting"
+              sequence="30"
+              groups="group_sunnyside_manager"/>
+
+    <menuitem id="menu_sunnyside_report_receivables"
+              name="Outstanding Balances &amp; Receivables"
+              parent="menu_sunnyside_reporting"
+              action="action_sunnyside_booking_receivables"
+              sequence="40"
+              groups="group_sunnyside_manager"/>
+
+    <!-- 4. Configuration Submenu (Admin Only) -->
+    <menuitem id="menu_sunnyside_configuration"
+              name="Configuration"
+              parent="menu_sunnyside_root"
+              sequence="100"
+              groups="group_sunnyside_manager"/>
+
+    <menuitem id="menu_sunnyside_locations"
+              name="Locations"
+              parent="menu_sunnyside_configuration"
+              action="action_sunnyside_location"
+              sequence="10"/>
+
+    <menuitem id="menu_sunnyside_seating_areas"
+              name="Seating Areas"
+              parent="menu_sunnyside_configuration"
+              action="action_sunnyside_seating_area"
+              sequence="20"/>
+
+    <menuitem id="menu_sunnyside_seating_units"
+              name="Seating Units"
+              parent="menu_sunnyside_configuration"
+              action="action_sunnyside_seating_unit"
+              sequence="25"/>
+
+    <menuitem id="menu_sunnyside_seating_images"
+              name="Seating Photographs"
+              parent="menu_sunnyside_configuration"
+              action="action_sunnyside_seating_image"
+              sequence="30"/>
+</odoo>

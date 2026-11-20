@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Dedicated Visitor Form View (Clean Front-Desk Interface) -->
+    <record id="view_sunnyside_visitor_form" model="ir.ui.view">
+        <field name="name">res.partner.visitor.form</field>
+        <field name="model">res.partner</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <form string="Visitor Profile">
+                <header>
+                    <button name="action_open_seating_dashboard"
+                            string="Assign Seating"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-cubes"
+                            invisible="not is_sunnyside_visitor"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object"
+                                name="action_view_sunnyside_visits"
+                                icon="fa-calendar-check-o">
+                            <field string="Visits" name="sunnyside_visit_count" widget="statinfo"/>
+                        </button>
+                    </div>
+
+                    <widget name="web_ribbon" title="Sunnyside Guest" bg_color="text-bg-primary" invisible="not is_sunnyside_visitor"/>
+
+                    <div class="oe_title mb-3">
+                        <label for="name" string="Visitor Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Tunde Johnson"/>
+                        </h1>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <field name="sunnyside_visitor_type" widget="badge"
+                                   decoration-info="sunnyside_visitor_type == 'new'"
+                                   decoration-success="sunnyside_visitor_type == 'returning'"/>
+                            <field name="is_sunnyside_visitor" invisible="1"/>
+                        </div>
+                    </div>
+
+                    <group>
+                        <group string="Contact &amp; Location">
+                            <field name="phone" widget="phone" options="{'enable_sms': false}"/>
+                            <field name="email" widget="email"/>
+                            <field name="sunnyside_location_id" options="{'no_create_edit': True}"/>
+                        </group>
+                        <group string="Beach Visit Demographics">
+                            <field name="sunnyside_visit_count" readonly="1"/>
+                            <field name="sunnyside_first_visit_date" readonly="1"/>
+                            <field name="sunnyside_last_visit_date" readonly="1"/>
+                            <field name="create_date" string="Registered On" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Privacy &amp; Compliance">
+                        <group>
+                            <field name="privacy_acknowledged" readonly="1"/>
+                            <field name="privacy_acknowledgement_date" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="privacy_notice_version" readonly="1"/>
+                            <field name="marketing_consent" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Visit History" name="page_visit_history">
+                            <field name="sunnyside_visit_ids" readonly="1">
+                                <list string="Visits" create="0" delete="0" default_order="check_in_datetime desc">
+                                    <field name="name" string="Visit Ref"/>
+                                    <field name="check_in_datetime" string="Check-in Time"/>
+                                    <field name="location_id" string="Neighbourhood"/>
+                                    <field name="source" widget="badge"/>
+                                    <field name="visitor_type" widget="badge"
+                                           decoration-info="visitor_type == 'new'"
+                                           decoration-success="visitor_type == 'returning'"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'checked_in'"
+                                           decoration-muted="state == 'cancelled'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Seating Bookings" name="page_seating_bookings" groups="sunnyside_visitor_management.group_sunnyside_user">
+                            <field name="sunnyside_booking_ids" readonly="1">
+                                <list string="Seating Bookings" create="0" delete="0" default_order="reserved_datetime desc, id desc">
+                                    <field name="name" string="Booking Ref"/>
+                                    <field name="visit_id" string="Visit Ref"/>
+                                    <field name="area_id" string="Seating Area"/>
+                                    <field name="unit_id" string="Seating Unit"/>
+                                    <field name="guest_count" string="Guests"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="amount_total" string="Total" widget="monetary"/>
+                                    <field name="amount_paid" string="Paid" widget="monetary"/>
+                                    <field name="amount_due" string="Outstanding" widget="monetary"/>
+                                    <field name="payment_status" widget="badge"
+                                           decoration-success="payment_status == 'paid'"
+                                           decoration-warning="payment_status == 'partial'"
+                                           decoration-danger="payment_status == 'unpaid'"/>
+                                    <field name="state" widget="badge"
+                                           decoration-primary="state == 'reserved'"
+                                           decoration-muted="state == 'released'"/>
+                                    <field name="reserved_datetime" string="Booking Date"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Partner Form View Extension: Add Sunnyside Beach Tab to standard contact form -->
+    <record id="view_partner_form_sunnyside" model="ir.ui.view">
+        <field name="name">res.partner.form.sunnyside</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!-- Smart Button for Visits -->
+            <div name="button_box" position="inside">
+                <button class="oe_stat_button" type="object"
+                        name="action_view_sunnyside_visits"
+                        icon="fa-calendar-check-o">
+                    <field string="Visits" name="sunnyside_visit_count" widget="statinfo"/>
+                </button>
+            </div>
+
+            <!-- Sunnyside Beach Tab -->
+            <xpath expr="//page[@name='internal_notes']" position="before">
+                <page string="Sunnyside Beach" name="page_sunnyside_beach">
+                    <group>
+                        <group string="Visitor Profile">
+                            <field name="is_sunnyside_visitor"/>
+                            <field name="sunnyside_visitor_type" widget="badge"
+                                   decoration-info="sunnyside_visitor_type == 'new'"
+                                   decoration-success="sunnyside_visitor_type == 'returning'"/>
+                            <field name="sunnyside_location_id" options="{'no_create_edit': True}"/>
+                        </group>
+                        <group string="Visit Summary">
+                            <field name="sunnyside_visit_count" readonly="1"/>
+                            <field name="sunnyside_first_visit_date" readonly="1"/>
+                            <field name="sunnyside_last_visit_date" readonly="1"/>
+                        </group>
+                        <group string="Privacy &amp; Consent">
+                            <field name="privacy_acknowledged" readonly="1"/>
+                            <field name="privacy_acknowledgement_date" readonly="1"/>
+                            <field name="privacy_notice_version" readonly="1"/>
+                            <field name="marketing_consent" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="sunnyside_visit_ids" readonly="1">
+                        <list string="Visit History" create="0">
+                            <field name="name"/>
+                            <field name="check_in_datetime"/>
+                            <field name="location_id"/>
+                            <field name="source" widget="badge"/>
+                            <field name="visitor_type" widget="badge"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Seating Bookings" name="page_partner_seating_bookings" groups="sunnyside_visitor_management.group_sunnyside_user">
+                    <field name="sunnyside_booking_ids" readonly="1">
+                        <list string="Seating Bookings" create="0" delete="0" default_order="reserved_datetime desc, id desc">
+                            <field name="name" string="Booking Ref"/>
+                            <field name="visit_id" string="Visit Ref"/>
+                            <field name="area_id" string="Seating Area"/>
+                            <field name="unit_id" string="Seating Unit"/>
+                            <field name="guest_count" string="Guests"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="amount_total" string="Total" widget="monetary"/>
+                            <field name="amount_paid" string="Paid" widget="monetary"/>
+                            <field name="amount_due" string="Outstanding" widget="monetary"/>
+                            <field name="payment_status" widget="badge"
+                                   decoration-success="payment_status == 'paid'"
+                                   decoration-warning="payment_status == 'partial'"
+                                   decoration-danger="payment_status == 'unpaid'"/>
+                            <field name="state" widget="badge"
+                                   decoration-primary="state == 'reserved'"
+                                   decoration-muted="state == 'released'"/>
+                            <field name="reserved_datetime" string="Booking Date"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Dedicated Visitor List View -->
+    <record id="view_sunnyside_visitor_list" model="ir.ui.view">
+        <field name="name">res.partner.visitor.list</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list string="Sunnyside Visitors" default_order="sunnyside_visit_count desc, id desc">
+                <field name="name" string="Visitor Name"/>
+                <field name="phone"/>
+                <field name="sunnyside_location_id" string="Neighbourhood"/>
+                <field name="sunnyside_visitor_type" widget="badge"
+                       decoration-info="sunnyside_visitor_type == 'new'"
+                       decoration-success="sunnyside_visitor_type == 'returning'"/>
+                <field name="is_frequent_visitor" string="Frequent" widget="boolean" optional="show"/>
+                <field name="sunnyside_visit_count" string="Total Visits" decoration-bf="1"/>
+                <field name="sunnyside_last_visit_date" string="Last Check-in"/>
+                <field name="create_date" string="Registration Date" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Dedicated Visitor Search View -->
+    <record id="view_sunnyside_visitor_search" model="ir.ui.view">
+        <field name="name">res.partner.visitor.search</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <search string="Search Visitors">
+                <field name="name" string="Name, Phone, or Email"
+                       filter_domain="['|', '|', ('name', 'ilike', self), ('phone', 'ilike', self), ('email', 'ilike', self)]"/>
+                <field name="phone"/>
+                <field name="sunnyside_location_id" string="Neighbourhood"/>
+
+                <filter string="Sunnyside Visitors" name="filter_visitors" domain="[('is_sunnyside_visitor', '=', True)]"/>
+                <separator/>
+                <filter string="New Visitors" name="filter_new_visitors" domain="[('sunnyside_visitor_type', '=', 'new')]"/>
+                <filter string="Returning Visitors" name="filter_returning_visitors" domain="[('sunnyside_visitor_type', '=', 'returning')]"/>
+                <filter string="Frequent Visitors (3+ Visits)" name="filter_frequent_visitors" domain="[('is_frequent_visitor', '=', True)]"/>
+                <filter string="Lapsed Guests (No Check-in > 30 Days)" name="filter_lapsed_visitors" domain="[('sunnyside_last_visit_date', '&lt;', 'today -30d')]"/>
+                <separator/>
+                <filter string="Registration Date" name="filter_registration_date" date="create_date"/>
+
+                <group>
+                    <filter string="Neighbourhood" name="group_by_location" context="{'group_by': 'sunnyside_location_id'}"/>
+                    <filter string="Visitor Status" name="group_by_type" context="{'group_by': 'sunnyside_visitor_type'}"/>
+                    <filter string="Frequent Status" name="group_by_frequent" context="{'group_by': 'is_frequent_visitor'}"/>
+                    <filter string="Registration Month" name="group_by_reg_month" context="{'group_by': 'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Visitor Action Window -->
+    <record id="action_sunnyside_visitor" model="ir.actions.act_window">
+        <field name="name">Visitors</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_sunnyside_visitor', '=', True)]</field>
+        <field name="context">{'default_is_sunnyside_visitor': True, 'search_default_filter_visitors': 1}</field>
+        <field name="search_view_id" ref="view_sunnyside_visitor_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Register the first Sunnyside Beach visitor!
+            </p>
+            <p>
+                Visitor profiles track beach visit frequency, neighbourhood demographics, and check-in history.
+            </p>
+        </field>
+    </record>
+
+    <!-- Bind Views to Action -->
+    <record id="action_sunnyside_visitor_view_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_sunnyside_visitor_list"/>
+        <field name="act_window_id" ref="action_sunnyside_visitor"/>
+    </record>
+
+    <record id="action_sunnyside_visitor_view_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_sunnyside_visitor_form"/>
+        <field name="act_window_id" ref="action_sunnyside_visitor"/>
+    </record>
+</odoo>

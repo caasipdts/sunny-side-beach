@@ -1186,7 +1186,7 @@ class CrmLead(models.Model):
 
         # checked here as it is its position in the priority order
         if len(self.message_ids) >= 25:
-            return _('Phew, that took some effort — but you nailed it. Good job!')
+            return _('Phew, that took some effort but you nailed it. Good job!')
 
         team_condition = f'team_id = {self.team_id.id}' if self.team_id else 'team_id IS NULL'
         source_case = f'source_id = {self.source_id.id} AND {team_condition}' if self.source_id else 'false'

@@ -88,7 +88,7 @@
 
                                     <p>We have successfully added your company to the <strong>Peppol Network</strong>.</p>
 
-                                    <p>You can now <strong>send<t t-if="object.account_peppol_proxy_state == 'receiver'"> and receive</t></strong> electronic invoices via Odoo — completely free of charge.</p>
+                                    <p>You can now <strong>send<t t-if="object.account_peppol_proxy_state == 'receiver'"> and receive</t></strong> electronic invoices via Odoo completely free of charge.</p>
 
                                     <p>Best regards,</p>
 

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 1. Dedicated Client Action for OWL Seating Dashboard -->
+    <record id="action_sunnyside_seating_dashboard" model="ir.actions.client">
+        <field name="name">Seating Management</field>
+        <field name="tag">sunnyside_seating_dashboard</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- 2. Seating Area Views -->
+    <record id="view_sunnyside_seating_area_list" model="ir.ui.view">
+        <field name="name">sunnyside.seating.area.list</field>
+        <field name="model">sunnyside.seating.area</field>
+        <field name="arch" type="xml">
+            <list string="Seating Areas" default_order="sequence, name, id">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="background_color" widget="color" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_seating_area_form" model="ir.ui.view">
+        <field name="name">sunnyside.seating.area.form</field>
+        <field name="model">sunnyside.seating.area</field>
+        <field name="arch" type="xml">
+            <form string="Seating Area">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Area Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. VIP Cabanas, Beachfront, Main Deck"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="background_color" widget="color"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="background_image" widget="image" class="oe_avatar"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Seating Units" name="page_units">
+                            <field name="unit_ids">
+                                <list string="Units">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="seating_type" widget="badge"/>
+                                    <field name="capacity_min"/>
+                                    <field name="capacity_max"/>
+                                    <field name="pricing_mode"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_seating_area_search" model="ir.ui.view">
+        <field name="name">sunnyside.seating.area.search</field>
+        <field name="model">sunnyside.seating.area</field>
+        <field name="arch" type="xml">
+            <search string="Search Seating Areas">
+                <field name="name"/>
+                <filter string="Archived" name="filter_inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sunnyside_seating_area" model="ir.actions.act_window">
+        <field name="name">Seating Areas</field>
+        <field name="res_model">sunnyside.seating.area</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_sunnyside_seating_area_search"/>
+    </record>
+
+    <!-- 3. Seating Unit Views -->
+    <record id="view_sunnyside_seating_unit_list" model="ir.ui.view">
+        <field name="name">sunnyside.seating.unit.list</field>
+        <field name="model">sunnyside.seating.unit</field>
+        <field name="arch" type="xml">
+            <list string="Seating Units" default_order="area_id, sequence, name, id">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="area_id"/>
+                <field name="seating_type" widget="badge"/>
+                <field name="capacity_min" string="Min Guests"/>
+                <field name="capacity_max" string="Max Guests"/>
+                <field name="pricing_mode"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="price_per_guest" widget="monetary" optional="show"/>
+                <field name="fixed_price" widget="monetary" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_seating_unit_form" model="ir.ui.view">
+        <field name="name">sunnyside.seating.unit.form</field>
+        <field name="model">sunnyside.seating.unit</field>
+        <field name="arch" type="xml">
+            <form string="Seating Unit">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Unit Identifier"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Table 1, Cabana A, Sunbed 10"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Zone &amp; Type">
+                            <field name="area_id" options="{'no_create': True}"/>
+                            <field name="seating_type"/>
+                            <field name="sequence"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Guest Capacity">
+                            <field name="capacity_min"/>
+                            <field name="capacity_max"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Pricing Rules">
+                        <group>
+                            <field name="pricing_mode"/>
+                            <field name="price_per_guest" widget="monetary" invisible="pricing_mode != 'per_guest'"/>
+                            <field name="fixed_price" widget="monetary" invisible="pricing_mode != 'fixed'"/>
+                        </group>
+                        <group invisible="pricing_mode != 'per_guest'">
+                            <field name="entry_fee_amount" widget="monetary"/>
+                            <field name="minimum_spend_amount" widget="monetary"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Photographs" name="page_photos">
+                            <field name="image_ids">
+                                <list string="Photographs">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="image" widget="image" class="oe_avatar"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_seating_unit_search" model="ir.ui.view">
+        <field name="name">sunnyside.seating.unit.search</field>
+        <field name="model">sunnyside.seating.unit</field>
+        <field name="arch" type="xml">
+            <search string="Search Seating Units">
+                <field name="name"/>
+                <field name="area_id"/>
+                <field name="seating_type"/>
+                <filter string="Tables" name="filter_tables" domain="[('seating_type', '=', 'table')]"/>
+                <filter string="Beachfront" name="filter_beachfront" domain="[('seating_type', '=', 'beachfront_seat')]"/>
+                <filter string="Cabanas" name="filter_cabanas" domain="[('seating_type', '=', 'cabana')]"/>
+                <separator/>
+                <filter string="Archived" name="filter_inactive" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Area" name="group_area" context="{'group_by': 'area_id'}"/>
+                    <filter string="Seating Type" name="group_type" context="{'group_by': 'seating_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sunnyside_seating_unit" model="ir.actions.act_window">
+        <field name="name">Seating Units</field>
+        <field name="res_model">sunnyside.seating.unit</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_sunnyside_seating_unit_search"/>
+    </record>
+
+    <!-- 4. Seating Photograph Views -->
+    <record id="view_sunnyside_seating_image_list" model="ir.ui.view">
+        <field name="name">sunnyside.seating.image.list</field>
+        <field name="model">sunnyside.seating.image</field>
+        <field name="arch" type="xml">
+            <list string="Seating Photographs">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="unit_id"/>
+                <field name="image" widget="image" class="oe_avatar"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_seating_image_form" model="ir.ui.view">
+        <field name="name">sunnyside.seating.image.form</field>
+        <field name="model">sunnyside.seating.image</field>
+        <field name="arch" type="xml">
+            <form string="Seating Photograph">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="unit_id" options="{'no_create': True}"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="image" widget="image" class="oe_avatar"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sunnyside_seating_image" model="ir.actions.act_window">
+        <field name="name">Seating Photographs</field>
+        <field name="res_model">sunnyside.seating.image</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
+

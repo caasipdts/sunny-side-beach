@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="location_lekki_phase_1" model="sunnyside.location">
+        <field name="name">Lekki Phase 1</field>
+        <field name="description">Lekki Phase 1, Eti-Osa, Lagos</field>
+    </record>
+
+    <record id="location_lekki_phase_2" model="sunnyside.location">
+        <field name="name">Lekki Phase 2</field>
+        <field name="description">Lekki Phase 2, Eti-Osa, Lagos</field>
+    </record>
+
+    <record id="location_victoria_island" model="sunnyside.location">
+        <field name="name">Victoria Island</field>
+        <field name="description">Victoria Island, Lagos</field>
+    </record>
+
+    <record id="location_ikoyi" model="sunnyside.location">
+        <field name="name">Ikoyi</field>
+        <field name="description">Ikoyi, Lagos</field>
+    </record>
+
+    <record id="location_oniru" model="sunnyside.location">
+        <field name="name">Oniru</field>
+        <field name="description">Oniru, Eti-Osa, Lagos</field>
+    </record>
+
+    <record id="location_ajah" model="sunnyside.location">
+        <field name="name">Ajah</field>
+        <field name="description">Ajah, Eti-Osa, Lagos</field>
+    </record>
+
+    <record id="location_sangotedo" model="sunnyside.location">
+        <field name="name">Sangotedo</field>
+        <field name="description">Sangotedo, Eti-Osa, Lagos</field>
+    </record>
+
+    <record id="location_abraham_adesanya" model="sunnyside.location">
+        <field name="name">Abraham Adesanya</field>
+        <field name="description">Abraham Adesanya, Ajah axis, Lagos</field>
+    </record>
+
+    <record id="location_badore" model="sunnyside.location">
+        <field name="name">Badore</field>
+        <field name="description">Badore, Ajah, Lagos</field>
+    </record>
+
+    <record id="location_chevron" model="sunnyside.location">
+        <field name="name">Chevron</field>
+        <field name="description">Chevron Drive / Lekki axis, Lagos</field>
+    </record>
+
+    <record id="location_osapa_london" model="sunnyside.location">
+        <field name="name">Osapa London</field>
+        <field name="description">Osapa London, Lekki, Lagos</field>
+    </record>
+
+    <record id="location_ikate" model="sunnyside.location">
+        <field name="name">Ikate</field>
+        <field name="description">Ikate Elegushi, Lekki, Lagos</field>
+    </record>
+
+    <record id="location_ikeja" model="sunnyside.location">
+        <field name="name">Ikeja</field>
+        <field name="description">Ikeja, Lagos Mainland</field>
+    </record>
+
+    <record id="location_surulere" model="sunnyside.location">
+        <field name="name">Surulere</field>
+        <field name="description">Surulere, Lagos Mainland</field>
+    </record>
+
+    <record id="location_yaba" model="sunnyside.location">
+        <field name="name">Yaba</field>
+        <field name="description">Yaba, Lagos Mainland</field>
+    </record>
+
+    <record id="location_gbagada" model="sunnyside.location">
+        <field name="name">Gbagada</field>
+        <field name="description">Gbagada, Lagos Mainland</field>
+    </record>
+
+    <record id="location_festac" model="sunnyside.location">
+        <field name="name">Festac</field>
+        <field name="description">Festac Town, Amuwo-Odofin, Lagos</field>
+    </record>
+
+    <record id="location_ikorodu" model="sunnyside.location">
+        <field name="name">Ikorodu</field>
+        <field name="description">Ikorodu, Lagos</field>
+    </record>
+
+    <record id="location_other" model="sunnyside.location">
+        <field name="name">Other / Outside Lagos</field>
+        <field name="description">Other locations across Nigeria or International</field>
+    </record>
+</odoo>

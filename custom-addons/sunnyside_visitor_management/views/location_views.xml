@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Location List View -->
+    <record id="view_sunnyside_location_list" model="ir.ui.view">
+        <field name="name">sunnyside.location.list</field>
+        <field name="model">sunnyside.location</field>
+        <field name="arch" type="xml">
+            <list string="Neighbourhood Locations">
+                <field name="name"/>
+                <field name="description"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Location Form View -->
+    <record id="view_sunnyside_location_form" model="ir.ui.view">
+        <field name="name">sunnyside.location.form</field>
+        <field name="model">sunnyside.location</field>
+        <field name="arch" type="xml">
+            <form string="Neighbourhood Location">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Neighbourhood Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Lekki Phase 1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1" placeholder="Optional notes or details about this area..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Location Search View -->
+    <record id="view_sunnyside_location_search" model="ir.ui.view">
+        <field name="name">sunnyside.location.search</field>
+        <field name="model">sunnyside.location</field>
+        <field name="arch" type="xml">
+            <search string="Search Locations">
+                <field name="name" string="Neighbourhood"/>
+                <field name="description"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Location Action Window -->
+    <record id="action_sunnyside_location" model="ir.actions.act_window">
+        <field name="name">Locations / Neighbourhoods</field>
+        <field name="res_model">sunnyside.location</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_sunnyside_location_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new neighbourhood or location!
+            </p>
+            <p>
+                Configure areas to categorize and analyze where Sunnyside Beach visitors originate from.
+            </p>
+        </field>
+    </record>
+</odoo>

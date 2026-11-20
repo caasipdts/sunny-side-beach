@@ -24,6 +24,7 @@ odoo/filestore
 odoo/addons/base/maintenance
 # windows installation config file
 /odoo.conf
+/start.sh
 
 # generated for windows installer?
 install/win32/*.bat
@@ -51,3 +52,12 @@ package.json
 /man/
 /share/
 /src/
+.venv/
+venv/
+ENV/
+env/
+
+# Database dumps & backups
+backups/
+*.dump
+
