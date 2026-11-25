@@ -1,0 +1,17 @@
+FROM python:3.13-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+COPY worker.py /app/worker.py
+RUN groupadd --system --gid 10001 worker \
+    && useradd --system --uid 10001 --gid worker --home-dir /home/worker worker \
+    && mkdir -p /home/worker/.local/share/SunnysideSync \
+    && chown -R worker:worker /home/worker
+
+ENV HOME=/home/worker \
+    LOCALAPPDATA=/home/worker/.local/share
+
+USER 10001:10001
+ENTRYPOINT ["python", "/app/worker.py"]

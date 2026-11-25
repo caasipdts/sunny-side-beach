@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Sunnyside Beach | Go-live readiness</title>
+  <style>
+    :root {
+      --ink: #172c32;
+      --muted: #5a7075;
+      --line: #dce6e4;
+      --paper: #fff;
+      --canvas: #f2f7f5;
+      --teal: #087e78;
+      --teal-dark: #075f5d;
+      --gold: #d6a545;
+      --soft: #eaf5f2;
+      --warn: #fff5dc;
+      --shadow: 0 16px 42px #153c3920;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font: 15px/1.5 "Segoe UI", system-ui, sans-serif;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .topbar {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px max(22px, calc((100vw - 1160px) / 2));
+      color: #f6fbf9;
+      background: #15383b;
+    }
+    .sun { color: #f4c45e; font-size: 25px; line-height: 1; }
+    .brand { font-weight: 700; letter-spacing: .02em; }
+    .topnote { margin-left: auto; color: #bfd2d0; font-size: 13px; }
+    main { max-width: 1160px; margin: 42px auto 64px; padding: 0 22px; }
+    .intro { margin-bottom: 24px; }
+    .eyebrow { color: var(--teal); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 5px 0 8px; font-size: clamp(30px, 4vw, 42px); line-height: 1.1; letter-spacing: -.035em; }
+    .intro p { max-width: 720px; margin: 0; color: var(--muted); font-size: 16px; }
+    .privacy {
+      display: flex; align-items: flex-start; gap: 10px;
+      margin-top: 18px; padding: 12px 15px; border: 1px solid #efd99e;
+      border-radius: 10px; color: #604a18; background: var(--warn); font-size: 13px;
+    }
+    .privacy strong { white-space: nowrap; }
+    .shell { display: grid; grid-template-columns: 265px minmax(0, 1fr); overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); box-shadow: var(--shadow); }
+    aside { padding: 22px 15px; border-right: 1px solid var(--line); background: #f9fbfa; }
+    .progress-heading { display: flex; justify-content: space-between; margin: 0 9px 10px; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .track { height: 6px; overflow: hidden; margin: 0 9px 22px; border-radius: 10px; background: #e3ece9; }
+    .track span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--teal); transition: width .2s ease; }
+    .step-nav { display: grid; gap: 5px; }
+    .step-link { display: flex; align-items: center; gap: 11px; width: 100%; padding: 9px; border: 0; border-radius: 9px; color: #486166; background: transparent; text-align: left; }
+    .step-link:disabled { cursor: default; opacity: .48; }
+    .step-link:not(:disabled):hover { background: var(--soft); }
+    .step-link[aria-current="step"] { color: var(--teal-dark); background: var(--soft); font-weight: 700; }
+    .num { flex: 0 0 27px; width: 27px; height: 27px; display: grid; place-items: center; border: 1px solid #ccdbd7; border-radius: 50%; background: white; font-size: 12px; font-weight: 700; }
+    .step-link.done .num { color: white; border-color: var(--teal); background: var(--teal); }
+    .step-label { font-size: 13px; }
+    .saved { margin: 20px 9px 0; color: var(--muted); font-size: 12px; }
+    .form-area { min-width: 0; padding: clamp(22px, 4vw, 42px); }
+    .step-panel { display: none; animation: appear .18s ease-out; }
+    .step-panel.active { display: block; }
+    @keyframes appear { from { opacity: .5; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .step-kicker { color: var(--teal); font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    h2 { margin: 5px 0 7px; font-size: 26px; letter-spacing: -.025em; }
+    .step-description { margin: 0 0 24px; color: var(--muted); }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 25px; }
+    .field { display: grid; gap: 6px; }
+    .field.wide { grid-column: 1 / -1; }
+    .field label { font-size: 13px; font-weight: 700; }
+    .optional { color: var(--muted); font-size: 11px; font-weight: 500; }
+    input[type="text"], input[type="date"], input[type="url"], input[type="number"], select, textarea {
+      width: 100%; min-height: 43px; padding: 10px 11px; border: 1px solid #c9d7d4; border-radius: 8px; color: var(--ink); background: white;
+    }
+    textarea { min-height: 78px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: var(--teal); outline: 3px solid #087e7822; }
+    .check-title { margin: 0 0 10px; font-size: 14px; }
+    .checks { display: grid; gap: 8px; }
+    .check { display: flex; align-items: flex-start; gap: 10px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 8px; color: #30494e; background: #fcfdfd; font-size: 13px; }
+    .check:hover { border-color: #9dbbb4; }
+    .check input { width: 17px; height: 17px; flex: 0 0 17px; margin: 1px 0 0; accent-color: var(--teal); }
+    .step-error { min-height: 23px; margin-top: 10px; color: #ad3d27; font-size: 13px; }
+    .actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .action-group { display: flex; gap: 9px; }
+    .btn { min-height: 42px; padding: 9px 15px; border: 1px solid #bdceca; border-radius: 8px; color: var(--ink); background: white; font-weight: 700; }
+    .btn:hover { border-color: var(--teal); }
+    .btn.primary { color: white; border-color: var(--teal); background: var(--teal); }
+    .btn.primary:hover { background: var(--teal-dark); }
+    .btn:disabled { cursor: not-allowed; opacity: .45; }
+    .secondary-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+    .btn.small { min-height: 35px; padding: 6px 10px; font-size: 12px; }
+    .summary { padding: 15px; border: 1px solid var(--line); border-radius: 10px; background: #f8fbfa; }
+    .summary h3 { margin: 0 0 8px; font-size: 15px; }
+    .summary p { margin: 5px 0; color: var(--muted); font-size: 13px; }
+    .complete-banner { margin-top: 16px; padding: 13px 15px; border-radius: 9px; color: #155c41; background: #e8f6ed; font-weight: 700; }
+    @media (max-width: 780px) {
+      main { margin-top: 25px; }
+      .shell { grid-template-columns: 1fr; }
+      aside { padding: 15px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .step-nav { display: flex; overflow-x: auto; padding-bottom: 3px; }
+      .step-link { flex: 0 0 auto; width: auto; }
+      .step-label { display: none; }
+      .saved { margin-top: 11px; }
+    }
+    @media (max-width: 520px) {
+      .topnote { display: none; }
+      .fields { grid-template-columns: 1fr; }
+      .field.wide { grid-column: auto; }
+      .form-area { padding: 22px 18px; }
+      .actions { align-items: stretch; }
+      .action-group { width: 100%; }
+      .action-group .btn { flex: 1; }
+      .privacy { display: block; }
+      .privacy strong { display: block; margin-bottom: 3px; }
+    }
+    @media print {
+      body { background: white; }
+      .topbar, aside, .actions, .secondary-actions, .privacy { display: none !important; }
+      main { max-width: none; margin: 0; padding: 0; }
+      .shell { display: block; border: 0; box-shadow: none; }
+      .step-panel { display: block !important; page-break-inside: avoid; margin-bottom: 22px; }
+      .form-area { padding: 0; }
+      input, select, textarea { border: 0 !important; border-bottom: 1px solid #aaa !important; border-radius: 0 !important; padding-left: 0 !important; }
+      .step-link { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <span class="sun" aria-hidden="true">☀</span>
+    <span class="brand">SUNNYSIDE BEACH</span>
+    <span class="topnote">Deployment readiness · saved in this browser</span>
+  </header>
+  <main>
+    <div class="intro">
+      <div class="eyebrow">Production launch planner</div>
+      <h1>Go-live readiness</h1>
+      <p>Work through the deployment in order. Record decisions, verify each control, and finish with an operational sign-off.</p>
+      <div class="privacy"><strong>Keep secrets out of this form.</strong><span>It is designed for non-sensitive settings and vault references only. Never enter passwords, API tokens, private keys, or recovery codes. Your answers stay in this browser until you export them.</span></div>
+    </div>
+
+    <div class="shell">
+      <aside aria-label="Form steps">
+        <div class="progress-heading"><span>Progress</span><span id="progress-label">Step 1 of 8</span></div>
+        <div class="track" role="progressbar" aria-label="Go-live form progress" aria-valuemin="0" aria-valuemax="8" aria-valuenow="1"><span id="progress-fill"></span></div>
+        <nav class="step-nav" id="step-nav"></nav>
+        <div class="saved" id="saved-note" role="status">Changes save in this browser.</div>
+      </aside>
+
+      <form class="form-area" id="wizard" novalidate>
+        <section class="step-panel active" data-title="Ownership" aria-labelledby="title-1">
+          <div class="step-kicker">Step 1 · ownership</div><h2 id="title-1" tabindex="-1">Set the launch scope</h2>
+          <p class="step-description">Name the people accountable for the production service and agree what a successful launch means.</p>
+          <div class="fields">
+            <div class="field"><label for="environment">Target environment</label><select id="environment" name="environment" required><option value="">Choose one</option><option>Production</option><option>Staging</option></select></div>
+            <div class="field"><label for="date">Planned go-live date</label><input id="date" type="date" name="go_live_date" required></div>
+            <div class="field"><label for="owner">Deployment owner</label><input id="owner" type="text" name="deployment_owner" required autocomplete="name"></div>
+            <div class="field"><label for="approver">Business approver</label><input id="approver" type="text" name="business_approver" required></div>
+            <div class="field"><label for="support">Support contact or rota</label><input id="support" type="text" name="support_contact" required></div>
+            <div class="field"><label for="rpo">Acceptable data loss (RPO)</label><input id="rpo" type="text" name="rpo" placeholder="e.g. 4 hours" required></div>
+            <div class="field"><label for="rto">Target restore time (RTO)</label><input id="rto" type="text" name="rto" placeholder="e.g. 8 hours" required></div>
+          </div>
+          <h3 class="check-title">Confirm these decisions</h3>
+          <div class="checks">
+            <label class="check"><input type="checkbox" data-required-check><span>Technical and business owners have accepted their responsibilities.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>RPO and RTO targets are agreed with the business.</span></label>
+          </div>
+          <div class="step-error" aria-live="polite"></div>
+        </section>
+
+        <section class="step-panel" data-title="Host & network" aria-labelledby="title-2">
+          <div class="step-kicker">Step 2 · host and network</div><h2 id="title-2" tabindex="-1">Prepare the production host</h2>
+          <p class="step-description">The cloud Compose stack publishes Caddy only. Odoo and PostgreSQL should remain private.</p>
+          <div class="fields">
+            <div class="field"><label for="hostname">Production hostname</label><input id="hostname" type="text" name="cloud_domain" placeholder="beach.example.com" required></div>
+            <div class="field"><label for="provider">Host / provider</label><input id="provider" type="text" name="host_provider" required></div>
+            <div class="field"><label for="region">Region / data location</label><input id="region" type="text" name="data_region" required></div>
+            <div class="field"><label for="worker-url">Private local Odoo URL for worker</label><input id="worker-url" type="url" name="worker_odoo_url" placeholder="https://private-vpn-host:8069" required></div>
+            <div class="field wide"><label for="network-notes">Network route / firewall change reference <span class="optional">(ticket or documentation reference)</span></label><input id="network-notes" type="text" name="network_change_reference"></div>
+          </div>
+          <h3 class="check-title">Verify network controls</h3>
+          <div class="checks">
+            <label class="check"><input type="checkbox" data-required-check><span>DNS points to the production host; the hostname is not <code>localhost</code>.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Inbound 80/443 route to Caddy. SSH is limited to named admins or VPN.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Odoo and PostgreSQL are not publicly exposed; worker-to-local Odoo uses a private route.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Host storage, memory, and CPU have monitoring and capacity headroom.</span></label>
+          </div>
+          <div class="step-error" aria-live="polite"></div>
+        </section>
+
+        <section class="step-panel" data-title="Images & secrets" aria-labelledby="title-3">
+          <div class="step-kicker">Step 3 · images and secrets</div><h2 id="title-3" tabindex="-1">Secure the runtime</h2>
+          <p class="step-description">Record version labels and secret-store references only. Never enter secret values here.</p>
+          <div class="fields">
+            <div class="field"><label for="odoo-image">Odoo image tag or digest</label><input id="odoo-image" type="text" name="odoo_image" placeholder="odoo:19.0@sha256:…" required></div>
+            <div class="field"><label for="postgres-image">PostgreSQL image tag or digest</label><input id="postgres-image" type="text" name="postgres_image" placeholder="postgres:15-bookworm@sha256:…" required></div>
+            <div class="field"><label for="caddy-image">Caddy image tag or digest</label><input id="caddy-image" type="text" name="caddy_image" placeholder="caddy:2@sha256:…" required></div>
+            <div class="field"><label for="vault-ref">Secret vault record / access reference</label><input id="vault-ref" type="text" name="secret_vault_reference" required></div>
+          </div>
+          <h3 class="check-title">Verify security controls</h3>
+          <div class="checks">
+            <label class="check"><input type="checkbox" data-required-check><span>Image versions are pinned, tested, recorded, and have a rollback version.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Unique database, Odoo master, and sync secrets are generated and held in an approved vault.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span><code>deploy/cloud/secrets/</code> is private, excluded from source control, and recovery-critical secrets have a protected copy.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Production DNS and Caddy HTTPS certificate are verified; worker TLS verification remains enabled.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Database listing/admin exposure is restricted and admin credentials are controlled.</span></label>
+          </div>
+          <div class="step-error" aria-live="polite"></div>
+        </section>
+
+        <section class="step-panel" data-title="Odoo setup" aria-labelledby="title-4">
+          <div class="step-kicker">Step 4 · Odoo setup</div><h2 id="title-4" tabindex="-1">Configure the business</h2>
+          <p class="step-description">Set company-level values before entering live records. Review user rights from a staff account.</p>
+          <div class="fields">
+            <div class="field"><label for="company">Company display / legal name</label><input id="company" type="text" name="company_name" required></div>
+            <div class="field"><label for="currency">Company currency</label><input id="currency" type="text" name="currency" placeholder="e.g. XAF" required></div>
+            <div class="field"><label for="timezone">Operating timezone</label><input id="timezone" type="text" name="timezone" placeholder="e.g. Africa/Douala" required></div>
+            <div class="field"><label for="operator-group">Reception access group</label><select id="operator-group" name="operator_group" required><option value="">Choose one</option><option>Sunnyside User</option><option>Custom approved role</option></select></div>
+            <div class="field"><label for="manager-group">Configuration access group</label><select id="manager-group" name="manager_group" required><option value="">Choose one</option><option>Sunnyside Manager</option><option>Custom approved role</option></select></div>
+            <div class="field"><label for="mail-ref">Mail sender / delivery test reference</label><input id="mail-ref" type="text" name="mail_test_reference" placeholder="Ticket, mailbox, or N/A with reason" required></div>
+          </div>
+          <h3 class="check-title">Verify access and app configuration</h3>
+          <div class="checks">
+            <label class="check"><input type="checkbox" data-required-check><span>Company name, address, currency, user timezone, and language are correct.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Named staff accounts use least privilege; no shared administrator login is used.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>A reception user can open the dashboard, read seating types, check in visitors, book units, and record payments.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Outgoing mail is tested, or email notifications/password reset are documented as not required.</span></label>
+          </div>
+          <div class="step-error" aria-live="polite"></div>
+        </section>
+
+        <section class="step-panel" data-title="Master data" aria-labelledby="title-5">
+          <div class="step-kicker">Step 5 · master data</div><h2 id="title-5" tabindex="-1">Align locations and seating</h2>
+          <p class="step-description">Bookings match seating units between databases using unit name and area. Prices and capacity need to reflect the real operation.</p>
+          <div class="fields">
+            <div class="field"><label for="inventory-owner">Master-data owner</label><input id="inventory-owner" type="text" name="master_data_owner" required></div>
+            <div class="field"><label for="inventory-ref">Reviewed inventory / price list reference</label><input id="inventory-ref" type="text" name="inventory_reference" required></div>
+            <div class="field wide"><label for="migration-choice">Existing local records to migrate</label><select id="migration-choice" name="migration_scope" required><option value="">Choose one</option><option>Production records only</option><option>All existing records</option><option>New production database; no history</option></select></div>
+          </div>
+          <h3 class="check-title">Verify master data</h3>
+          <div class="checks">
+            <label class="check"><input type="checkbox" data-required-check><span>Areas, units, active status, capacities, seating types, pricing, fees, and minimum spends have been reviewed.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Cloud and local inventory have one matching unit for every shared unit name + area; currencies agree.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Standard cloud inventory is seeded where applicable; custom units/types are explicitly reconciled.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Migration scope is approved and both databases are backed up before initial migration.</span></label>
+          </div>
+          <div class="step-error" aria-live="polite"></div>
+        </section>
+
+        <section class="step-panel" data-title="Sync worker" aria-labelledby="title-6">
+          <div class="step-kicker">Step 6 · synchronization</div><h2 id="title-6" tabindex="-1">Connect the sync worker</h2>
+          <p class="step-description">Use a dedicated Odoo service account and a private network path to the local Odoo database.</p>
+          <div class="fields">
+            <div class="field"><label for="device-id">Sync device ID</label><input id="device-id" type="text" name="sync_device_id" required></div>
+            <div class="field"><label for="worker-config-ref">Worker config / vault record reference</label><input id="worker-config-ref" type="text" name="worker_config_reference" required></div>
+            <div class="field"><label for="sync-user">Dedicated local sync username</label><input id="sync-user" type="text" name="sync_username" required></div>
+            <div class="field"><label for="reconcile">Reconciliation interval in hours</label><input id="reconcile" type="number" min="1" name="reconcile_interval_hours" value="1" required></div>
+          </div>
+          <h3 class="check-title">Verify synchronization</h3>
+          <div class="checks">
+            <label class="check"><input type="checkbox" data-required-check><span>Worker account is dedicated and granted Sunnyside Sync User; device ID matches config and cloud registration.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Token is stored as a Docker secret; only its hash is registered in cloud Odoo.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Worker reaches the intended local Odoo URL privately, and TLS verification is on.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Initial migration is complete; worker is running, online, with no pending or quarantined events.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Push, pull, and restart/resume behavior have been verified and a quarantine owner is assigned.</span></label>
+          </div>
+          <div class="step-error" aria-live="polite"></div>
+        </section>
+
+        <section class="step-panel" data-title="Recovery & operations" aria-labelledby="title-7">
+          <div class="step-kicker">Step 7 · recovery and operations</div><h2 id="title-7" tabindex="-1">Prove recovery and support</h2>
+          <p class="step-description">A backup is only useful if it is protected, recent enough, and restorable.</p>
+          <div class="fields">
+            <div class="field"><label for="backup-location">Encrypted off-site backup location reference</label><input id="backup-location" type="text" name="backup_location_reference" required></div>
+            <div class="field"><label for="backup-cadence">Backup cadence and retention</label><input id="backup-cadence" type="text" name="backup_cadence_retention" placeholder="e.g. every 6h, retain 30 days" required></div>
+            <div class="field"><label for="restore-ref">Restore drill date / record reference</label><input id="restore-ref" type="text" name="restore_drill_reference" required></div>
+            <div class="field"><label for="alert-ref">Monitoring / alert route reference</label><input id="alert-ref" type="text" name="monitoring_reference" required></div>
+            <div class="field wide"><label for="rollback">Rollback release and procedure reference</label><input id="rollback" type="text" name="rollback_reference" required></div>
+          </div>
+          <h3 class="check-title">Verify operational readiness</h3>
+          <div class="checks">
+            <label class="check"><input type="checkbox" data-required-check><span>Database and filestore backups are paired, encrypted, off-host, access-controlled, and retention is monitored.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>A restore drill succeeded in a separate environment within the agreed RTO.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Container health, disk, logs, certificate expiry, backup age, and sync status have an owner and alert path.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Upgrade window, rollback steps, and pre-upgrade backup procedure are recorded.</span></label>
+          </div>
+          <div class="step-error" aria-live="polite"></div>
+        </section>
+
+        <section class="step-panel" data-title="Acceptance & sign-off" aria-labelledby="title-8">
+          <div class="step-kicker">Step 8 · acceptance</div><h2 id="title-8" tabindex="-1">Test and approve launch</h2>
+          <p class="step-description">Run these checks against the target production release, remove or identify test transactions, then record approval.</p>
+          <div class="fields">
+            <div class="field"><label for="release">Release / commit / image identifiers</label><input id="release" type="text" name="release_identifiers" required></div>
+            <div class="field"><label for="operator">Go-live operator</label><input id="operator" type="text" name="go_live_operator" required></div>
+            <div class="field"><label for="signoff-date">Sign-off date</label><input id="signoff-date" type="date" name="signoff_date" required></div>
+            <div class="field"><label for="approval-ref">Approval / change record reference</label><input id="approval-ref" type="text" name="approval_reference" required></div>
+            <div class="field wide"><label for="notes">Exceptions accepted and follow-up owner <span class="optional">(enter “None” if there are no exceptions)</span></label><textarea id="notes" name="exceptions_and_followups" required></textarea></div>
+          </div>
+          <h3 class="check-title">End-to-end acceptance</h3>
+          <div class="checks">
+            <label class="check"><input type="checkbox" data-required-check><span>Public hostname serves valid HTTPS and only intended network ports are reachable.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Reception test: check-in, seating reservation, payment, dashboard totals, and currency are correct.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Booking and payment reached cloud; pull-back and worker restart/resume were confirmed.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Pending and quarantined event counts are zero; test transactions are removed or labelled.</span></label>
+            <label class="check"><input type="checkbox" data-required-check><span>Business approver accepts the launch and support coverage is active.</span></label>
+          </div>
+          <div class="step-error" aria-live="polite"></div>
+          <div class="summary" id="summary" hidden></div>
+          <div class="complete-banner" id="complete-banner" hidden>All sections are complete. Export the sign-off record and store it with the release/change record.</div>
+        </section>
+
+        <div class="actions">
+          <button class="btn" type="button" id="previous">Back</button>
+          <span id="step-count" aria-live="polite">Step 1 of 8</span>
+          <div class="action-group"><button class="btn primary" type="button" id="next">Continue</button></div>
+        </div>
+        <div class="secondary-actions">
+          <button class="btn small" type="button" id="print">Print</button>
+          <button class="btn small" type="button" id="export">Export JSON</button>
+          <button class="btn small" type="button" id="reset">Clear saved answers</button>
+        </div>
+      </form>
+    </div>
+  </main>
+  <script>
+    (() => {
+      const storageKey = 'sunnyside-go-live-form-v1';
+      const panels = [...document.querySelectorAll('.step-panel')];
+      const nav = document.getElementById('step-nav');
+      const form = document.getElementById('wizard');
+      const previous = document.getElementById('previous');
+      const next = document.getElementById('next');
+      const progress = document.querySelector('[role="progressbar"]');
+      const progressFill = document.getElementById('progress-fill');
+      const progressLabel = document.getElementById('progress-label');
+      const stepCount = document.getElementById('step-count');
+      const savedNote = document.getElementById('saved-note');
+      let current = 0;
+      let answers = {};
+
+      panels.forEach((panel, stepIndex) => {
+        [...panel.querySelectorAll('[data-required-check]')].forEach((checkbox, checkIndex) => {
+          checkbox.name = `step_${stepIndex + 1}_check_${checkIndex + 1}`;
+        });
+      });
+
+      try { answers = JSON.parse(localStorage.getItem(storageKey) || '{}'); }
+      catch (_) { answers = {}; }
+
+      panels.forEach((panel, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'step-link';
+        button.dataset.index = index;
+        button.innerHTML = `<span class="num">${index + 1}</span><span class="step-label"></span>`;
+        button.querySelector('.step-label').textContent = panel.dataset.title;
+        button.addEventListener('click', () => {
+          if (index <= current) show(index);
+        });
+        nav.append(button);
+      });
+
+      function restore() {
+        for (const element of form.elements) {
+          if (!element.name || !(element.name in answers)) continue;
+          if (element.type === 'checkbox') element.checked = !!answers[element.name];
+          else element.value = answers[element.name];
+        }
+      }
+
+      function collect() {
+        const values = {};
+        for (const element of form.elements) {
+          if (!element.name) continue;
+          values[element.name] = element.type === 'checkbox' ? element.checked : element.value.trim();
+        }
+        return values;
+      }
+
+      function save() {
+        answers = collect();
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(answers));
+          savedNote.textContent = 'Saved in this browser just now.';
+        } catch (_) {
+          savedNote.textContent = 'Browser storage is unavailable; export answers before closing.';
+        }
+        updateNav();
+      }
+
+      function valid(index) {
+        const panel = panels[index];
+        const fields = [...panel.querySelectorAll('[required]')];
+        const missingField = fields.find(field => !String(field.value || '').trim() || !field.checkValidity());
+        const missingCheck = [...panel.querySelectorAll('[data-required-check]')].some(box => !box.checked);
+        const error = panel.querySelector('.step-error');
+        if (missingField || missingCheck) {
+          error.textContent = missingField ? 'Complete the required fields in this step.' : 'Confirm each required readiness check before continuing.';
+          if (missingField) missingField.focus();
+          return false;
+        }
+        error.textContent = '';
+        return true;
+      }
+
+      function updateNav() {
+        [...nav.children].forEach((button, index) => {
+          button.disabled = index > current;
+          button.classList.toggle('done', index < current && validQuiet(index));
+          if (index === current) button.setAttribute('aria-current', 'step');
+          else button.removeAttribute('aria-current');
+        });
+        const position = current + 1;
+        progress.setAttribute('aria-valuenow', String(position));
+        progressFill.style.width = `${(position / panels.length) * 100}%`;
+        progressLabel.textContent = `Step ${position} of ${panels.length}`;
+        stepCount.textContent = `Step ${position} of ${panels.length}`;
+        previous.disabled = current === 0;
+        next.textContent = current === panels.length - 1 ? 'Complete sign-off' : 'Continue';
+      }
+
+      function validQuiet(index) {
+        const panel = panels[index];
+        return [...panel.querySelectorAll('[required]')].every(field => String(field.value || '').trim() && field.checkValidity())
+          && [...panel.querySelectorAll('[data-required-check]')].every(box => box.checked);
+      }
+
+      function show(index) {
+        current = index;
+        panels.forEach((panel, i) => panel.classList.toggle('active', i === current));
+        updateNav();
+        if (current === panels.length - 1) renderSummary();
+        document.getElementById(`title-${current + 1}`).focus({ preventScroll: true });
+      }
+
+      function renderSummary() {
+        const summary = document.getElementById('summary');
+        const checks = panels.map((panel, index) => `${index + 1}. ${panel.dataset.title}: ${validQuiet(index) ? 'Complete' : 'Incomplete'}`);
+        summary.replaceChildren();
+        const heading = document.createElement('h3');
+        heading.textContent = 'Readiness summary';
+        summary.append(heading);
+        checks.forEach(text => {
+          const line = document.createElement('p');
+          line.textContent = text;
+          summary.append(line);
+        });
+        summary.hidden = false;
+      }
+
+      restore();
+      form.addEventListener('input', save);
+      form.addEventListener('change', save);
+      previous.addEventListener('click', () => show(Math.max(0, current - 1)));
+      next.addEventListener('click', () => {
+        if (!valid(current)) return;
+        save();
+        if (current < panels.length - 1) show(current + 1);
+        else {
+          const complete = panels.every((_, index) => validQuiet(index));
+          document.getElementById('complete-banner').hidden = !complete;
+          renderSummary();
+          if (complete) document.getElementById('complete-banner').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+      document.getElementById('print').addEventListener('click', () => window.print());
+      document.getElementById('export').addEventListener('click', () => {
+        save();
+        const payload = {
+          form: 'Sunnyside Beach go-live readiness',
+          exported_at: new Date().toISOString(),
+          answers,
+          completion: panels.map((panel, index) => ({ step: index + 1, title: panel.dataset.title, complete: validQuiet(index) })),
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'sunnyside-go-live-readiness.json';
+        link.click();
+        URL.revokeObjectURL(link.href);
+      });
+      document.getElementById('reset').addEventListener('click', () => {
+        if (!window.confirm('Clear all saved go-live answers from this browser?')) return;
+        localStorage.removeItem(storageKey);
+        form.reset();
+        answers = {};
+        savedNote.textContent = 'Saved answers cleared.';
+        document.getElementById('summary').hidden = true;
+        document.getElementById('complete-banner').hidden = true;
+        show(0);
+      });
+      show(0);
+    })();
+  </script>
+</body>
+</html>

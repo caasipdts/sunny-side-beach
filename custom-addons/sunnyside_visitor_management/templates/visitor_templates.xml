@@ -81,7 +81,7 @@
 
                             <!-- Area / Location Dropdown (Remains a dropdown as instructed) -->
                             <div class="mb-3">
-                                <label class="form-label fw-bold mb-1 visitor-checkin-label" for="location_id">Area / Location</label>
+                                <label class="form-label fw-bold mb-1 visitor-checkin-label" for="location_id">Area / Location *</label>
                                 <select name="location_id"
                                         id="location_id"
                                         class="form-select s_website_form_input visitor-checkin-control">

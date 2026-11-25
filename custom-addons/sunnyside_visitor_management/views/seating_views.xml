@@ -81,6 +81,74 @@
         <field name="search_view_id" ref="view_sunnyside_seating_area_search"/>
     </record>
 
+    <!-- Seating Type Views -->
+    <record id="view_sunnyside_seating_type_list" model="ir.ui.view">
+        <field name="name">sunnyside.seating.type.list</field>
+        <field name="model">sunnyside.seating.type</field>
+        <field name="arch" type="xml">
+            <list string="Seating Types" default_order="sequence, name, id">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="capacity_min"/>
+                <field name="capacity_max"/>
+                <field name="pricing_mode"/>
+                <field name="active"/>
+                <field name="is_builtin" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_seating_type_form" model="ir.ui.view">
+        <field name="name">sunnyside.seating.type.form</field>
+        <field name="model">sunnyside.seating.type</field>
+        <field name="arch" type="xml">
+            <form string="Seating Type">
+                <sheet>
+                    <field name="is_builtin" invisible="1"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" readonly="is_builtin"/></h1>
+                    </div>
+                    <group>
+                        <group string="Capacity Rules">
+                            <field name="capacity_min" readonly="is_builtin"/>
+                            <field name="capacity_max" readonly="is_builtin"/>
+                        </group>
+                        <group string="Pricing Defaults">
+                            <field name="pricing_mode" readonly="is_builtin"/>
+                            <field name="price_per_guest" invisible="pricing_mode != 'per_guest'" readonly="is_builtin"/>
+                            <field name="fixed_price" invisible="pricing_mode != 'fixed'" readonly="is_builtin"/>
+                            <field name="entry_fee_amount" invisible="pricing_mode != 'per_guest'" readonly="is_builtin"/>
+                            <field name="minimum_spend_amount" invisible="pricing_mode != 'per_guest'" readonly="is_builtin"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="sequence"/>
+                        <field name="active" readonly="is_builtin"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_seating_type_search" model="ir.ui.view">
+        <field name="name">sunnyside.seating.type.search</field>
+        <field name="model">sunnyside.seating.type</field>
+        <field name="arch" type="xml">
+            <search string="Search Seating Types">
+                <field name="name"/>
+                <filter string="Archived" name="filter_inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sunnyside_seating_type" model="ir.actions.act_window">
+        <field name="name">Seating Types</field>
+        <field name="res_model">sunnyside.seating.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_sunnyside_seating_type_search"/>
+    </record>
+
     <!-- 3. Seating Unit Views -->
     <record id="view_sunnyside_seating_unit_list" model="ir.ui.view">
         <field name="name">sunnyside.seating.unit.list</field>
@@ -147,6 +215,20 @@
                                     <field name="name"/>
                                     <field name="image" widget="image" class="oe_avatar"/>
                                 </list>
+                                <form string="Seating Photograph">
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="name"/>
+                                                <field name="unit_id" readonly="1"/>
+                                                <field name="sequence"/>
+                                            </group>
+                                            <group>
+                                                <field name="image" widget="image" class="oe_avatar"/>
+                                            </group>
+                                        </group>
+                                    </sheet>
+                                </form>
                             </field>
                         </page>
                     </notebook>

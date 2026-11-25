@@ -223,6 +223,50 @@ class TestSunnysideSeatingBooking(TransactionCase):
         self.assertEqual(cabana.entry_fee_amount, 0.0)
         self.assertEqual(cabana.minimum_spend_amount, 0.0)
 
+    def test_custom_seating_type_rules_drive_unit_defaults(self):
+        seating_type = self.env['sunnyside.seating.type'].create({
+            'name': 'Rooftop Lounge',
+            'capacity_min': 2,
+            'capacity_max': 12,
+            'pricing_mode': 'fixed',
+            'price_per_guest': 0.0,
+            'fixed_price': 300000.0,
+            'entry_fee_amount': 0.0,
+            'minimum_spend_amount': 0.0,
+        })
+
+        selection = self.Unit.fields_get(['seating_type'])['seating_type']['selection']
+        self.assertIn((seating_type.code, seating_type.name), selection)
+
+        unit = self.Unit.create({
+            'name': 'Rooftop R-01',
+            'area_id': self.test_area.id,
+            'seating_type': seating_type.code,
+        })
+        self.assertEqual(unit.seating_type, seating_type.code)
+        self.assertEqual(unit.capacity_min, 2)
+        self.assertEqual(unit.capacity_max, 12)
+        self.assertEqual(unit.pricing_mode, 'fixed')
+        self.assertEqual(unit.fixed_price, 300000.0)
+
+        with self.assertRaises(ValidationError):
+            self.Unit.create({
+                'name': 'Rooftop R-02',
+                'area_id': self.test_area.id,
+                'seating_type': seating_type.code,
+                'capacity_max': 13,
+            })
+        with self.assertRaises(ValidationError):
+            seating_type.write({'capacity_min': 3})
+        with self.assertRaises(UserError):
+            seating_type.write({'active': False})
+
+    def test_seating_type_form_hides_system_generated_code(self):
+        view = self.env.ref(
+            'sunnyside_visitor_management.view_sunnyside_seating_type_form'
+        )
+        self.assertNotIn('name="code"', view.arch_db)
+
     def test_03_seating_unit_capacity_constraints(self):
         """Verify capacity constraints for all unit types."""
         # Table capacity cannot exceed 4

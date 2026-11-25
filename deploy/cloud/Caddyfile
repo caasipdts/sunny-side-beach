@@ -1,0 +1,10 @@
+{$CLOUD_DOMAIN:localhost} {
+    encode zstd gzip
+    reverse_proxy odoo:8069
+}
+
+https://caddy {
+    tls internal
+    encode zstd gzip
+    reverse_proxy odoo:8069
+}

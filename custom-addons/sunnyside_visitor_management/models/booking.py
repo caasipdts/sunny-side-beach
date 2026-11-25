@@ -3,6 +3,8 @@ from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError, AccessError
 from odoo.tools.sql import create_index
 
+from .seating import seating_type_selection
+
 
 class SunnysideBooking(models.Model):
     _name = 'sunnyside.booking'
@@ -76,11 +78,7 @@ class SunnysideBooking(models.Model):
 
     # Pricing snapshot fields (locked at booking time to protect historical records)
     seating_type = fields.Selection(
-        selection=[
-            ('table', 'Standard Table'),
-            ('beachfront_seat', 'Beachfront Seat'),
-            ('cabana', 'Cabana'),
-        ],
+        selection=seating_type_selection,
         string='Seating Type',
         readonly=True,
         copy=False,
@@ -269,12 +267,6 @@ class SunnysideBooking(models.Model):
                             'unit': unit.name,
                         }
                     )
-                if unit.seating_type == 'table' and booking.guest_count > 4:
-                    raise ValidationError(_("Standard tables cannot accommodate more than 4 guests."))
-                elif unit.seating_type == 'beachfront_seat' and booking.guest_count != 1:
-                    raise ValidationError(_("Beachfront seats must have exactly 1 guest."))
-                elif unit.seating_type == 'cabana' and booking.guest_count > 9:
-                    raise ValidationError(_("Cabanas cannot accommodate more than 9 guests."))
 
     @api.constrains('unit_id', 'state')
     def _check_single_active_reservation(self):
@@ -352,13 +344,6 @@ class SunnysideBooking(models.Model):
                         'unit': unit.name,
                     }
                 )
-            if unit.seating_type == 'table' and guest_count > 4:
-                raise ValidationError(_("Standard tables cannot accommodate more than 4 guests."))
-            elif unit.seating_type == 'beachfront_seat' and guest_count != 1:
-                raise ValidationError(_("Beachfront seats must have exactly 1 guest."))
-            elif unit.seating_type == 'cabana' and guest_count > 9:
-                raise ValidationError(_("Cabanas cannot accommodate more than 9 guests."))
-
             # 4. Concurrency Protection - Row Lock on Unit and Recheck Active Reservations
             self.env.cr.execute(
                 "SELECT id, active FROM sunnyside_seating_unit WHERE id = %s FOR UPDATE",
@@ -377,26 +362,31 @@ class SunnysideBooking(models.Model):
             vals['currency_id'] = currency.id
             vals['company_id'] = company.id
             vals['area_id'] = unit.area_id.id
-            vals['seating_type'] = unit.seating_type
-            vals['pricing_mode'] = unit.pricing_mode
             vals['state'] = 'reserved'
             vals['reserved_by_id'] = self.env.user.id
-            vals['reserved_datetime'] = fields.Datetime.now()
-
-            if unit.pricing_mode == 'fixed':
-                fixed_rate = currency.round(unit.fixed_price if unit.fixed_price > 0 else 250000.0)
-                vals['unit_price'] = fixed_rate
-                vals['entry_fee_amount'] = 0.0
-                vals['minimum_spend_amount'] = 0.0
-                vals['amount_total'] = fixed_rate
+            if self.env.context.get('sync_historical_snapshot'):
+                # A synchronized booking carries the immutable pricing values
+                # captured when it was made, which may predate unit repricing.
+                vals.setdefault('reserved_datetime', fields.Datetime.now())
             else:
-                per_guest_rate = currency.round(unit.price_per_guest if unit.price_per_guest > 0 else 20000.0)
-                entry_rate = currency.round(unit.entry_fee_amount if unit.entry_fee_amount >= 0 else 5000.0)
-                min_spend_rate = currency.round(unit.minimum_spend_amount if unit.minimum_spend_amount >= 0 else 15000.0)
-                vals['unit_price'] = per_guest_rate
-                vals['entry_fee_amount'] = currency.round(entry_rate * guest_count)
-                vals['minimum_spend_amount'] = currency.round(min_spend_rate * guest_count)
-                vals['amount_total'] = currency.round(per_guest_rate * guest_count)
+                vals['seating_type'] = unit.seating_type
+                vals['pricing_mode'] = unit.pricing_mode
+                vals['reserved_datetime'] = fields.Datetime.now()
+
+                if unit.pricing_mode == 'fixed':
+                    fixed_rate = currency.round(unit.fixed_price if unit.fixed_price > 0 else 250000.0)
+                    vals['unit_price'] = fixed_rate
+                    vals['entry_fee_amount'] = 0.0
+                    vals['minimum_spend_amount'] = 0.0
+                    vals['amount_total'] = fixed_rate
+                else:
+                    per_guest_rate = currency.round(unit.price_per_guest if unit.price_per_guest > 0 else 20000.0)
+                    entry_rate = currency.round(unit.entry_fee_amount if unit.entry_fee_amount >= 0 else 5000.0)
+                    min_spend_rate = currency.round(unit.minimum_spend_amount if unit.minimum_spend_amount >= 0 else 15000.0)
+                    vals['unit_price'] = per_guest_rate
+                    vals['entry_fee_amount'] = currency.round(entry_rate * guest_count)
+                    vals['minimum_spend_amount'] = currency.round(min_spend_rate * guest_count)
+                    vals['amount_total'] = currency.round(per_guest_rate * guest_count)
 
             # 6. Sequence Reference
             if vals.get('name', _('New')) == _('New'):
@@ -415,8 +405,9 @@ class SunnysideBooking(models.Model):
             raise
 
         # 8. Chatter Logging on Creation
-        for record in records:
-            record._log_booking_created()
+        if not self.env.context.get('tracking_disable'):
+            for record in records:
+                record._log_booking_created()
 
         return records
 
@@ -477,13 +468,6 @@ class SunnysideBooking(models.Model):
                                 'unit': unit.name,
                             }
                         )
-                    if unit.seating_type == 'table' and new_count > 4:
-                        raise ValidationError(_("Standard tables cannot accommodate more than 4 guests."))
-                    elif unit.seating_type == 'beachfront_seat' and new_count != 1:
-                        raise ValidationError(_("Beachfront seats must have exactly 1 guest."))
-                    elif unit.seating_type == 'cabana' and new_count > 9:
-                        raise ValidationError(_("Cabanas cannot accommodate more than 9 guests."))
-
         return super().write(vals)
 
     def action_release(self):

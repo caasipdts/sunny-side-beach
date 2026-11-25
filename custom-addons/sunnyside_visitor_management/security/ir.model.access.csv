@@ -9,6 +9,8 @@ access_sunnyside_dashboard_user,sunnyside.dashboard.user,model_sunnyside_dashboa
 access_sunnyside_dashboard_manager,sunnyside.dashboard.manager,model_sunnyside_dashboard,group_sunnyside_manager,1,1,1,1
 access_sunnyside_seating_area_user,sunnyside.seating.area.user,model_sunnyside_seating_area,group_sunnyside_user,1,0,0,0
 access_sunnyside_seating_area_manager,sunnyside.seating.area.manager,model_sunnyside_seating_area,group_sunnyside_manager,1,1,1,1
+access_sunnyside_seating_type_user,sunnyside.seating.type.user,model_sunnyside_seating_type,group_sunnyside_user,1,0,0,0
+access_sunnyside_seating_type_manager,sunnyside.seating.type.manager,model_sunnyside_seating_type,group_sunnyside_manager,1,1,1,1
 access_sunnyside_seating_unit_user,sunnyside.seating.unit.user,model_sunnyside_seating_unit,group_sunnyside_user,1,0,0,0
 access_sunnyside_seating_unit_manager,sunnyside.seating.unit.manager,model_sunnyside_seating_unit,group_sunnyside_manager,1,1,1,1
 access_sunnyside_seating_image_user,sunnyside.seating.image.user,model_sunnyside_seating_image,group_sunnyside_user,1,0,0,0

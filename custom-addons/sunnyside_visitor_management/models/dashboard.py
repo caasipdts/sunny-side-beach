@@ -445,13 +445,18 @@ class SunnysideDashboard(models.Model):
 
         # --- Booking distribution by seating type ---
         type_distribution = []
-        type_map = {'table': 'Standard Table', 'beachfront_seat': 'Beachfront Seat', 'cabana': 'Cabana'}
-        for stype, label in type_map.items():
-            type_bookings = all_reserved_bookings.filtered(lambda b: b.seating_type == stype)
+        seating_types = self.env['sunnyside.seating.type'].search(
+            [('active', '=', True)],
+            order='sequence, name, id',
+        )
+        for seating_type in seating_types:
+            type_bookings = all_reserved_bookings.filtered(
+                lambda booking: booking.seating_type == seating_type.code
+            )
             if type_bookings:
                 type_distribution.append({
-                    'type': stype,
-                    'label': label,
+                    'type': seating_type.code,
+                    'label': seating_type.name,
                     'count': len(type_bookings),
                     'guests': sum(type_bookings.mapped('guest_count')),
                 })

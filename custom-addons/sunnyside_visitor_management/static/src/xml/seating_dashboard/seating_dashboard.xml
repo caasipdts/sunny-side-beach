@@ -154,9 +154,9 @@
                     <!-- Seating Type Filter -->
                     <select class="form-select filter-select" t-model="state.typeFilter">
                         <option value="all">All Seating Types</option>
-                        <option value="table">Standard Tables</option>
-                        <option value="beachfront_seat">Beachfront Seats</option>
-                        <option value="cabana">Cabanas</option>
+                        <t t-foreach="state.seatingTypes" t-as="seatingType" t-key="seatingType.code">
+                            <option t-att-value="seatingType.code"><t t-esc="seatingType.name"/></option>
+                        </t>
                     </select>
                 </div>
             </section>
