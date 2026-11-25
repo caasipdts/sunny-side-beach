@@ -91,7 +91,12 @@
     </record>
 
     <record id="location_other" model="sunnyside.location">
-        <field name="name">Other / Outside Lagos</field>
-        <field name="description">Other locations across Nigeria or International</field>
+        <field name="name">Another State</field>
+        <field name="description">Other locations within Nigeria</field>
+    </record>
+
+    <record id="location_other" model="sunnyside.location">
+        <field name="name">International</field>
+        <field name="description">Other locations outside Nigeria</field>
     </record>
 </odoo>
