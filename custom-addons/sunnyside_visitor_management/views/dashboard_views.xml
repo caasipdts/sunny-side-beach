@@ -6,7 +6,7 @@
         <field name="model">sunnyside.dashboard</field>
         <field name="arch" type="xml">
             <form string="Management Dashboard" create="false" delete="false" class="o_sunnyside_dashboard_form">
-                <header>
+                <header class="ps-4">
                     <button name="action_open_checkin_wizard"
                             string="New Check-in"
                             type="object"
