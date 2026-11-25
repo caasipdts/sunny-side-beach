@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
+import re
+
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
+
+
+def seating_type_selection(model):
+    seating_types = model.env['sunnyside.seating.type'].search(
+        [('active', '=', True)],
+        order='sequence, name, id',
+    )
+    return [(seating_type.code, seating_type.name) for seating_type in seating_types]
 
 
 class SunnysideSeatingArea(models.Model):
@@ -38,6 +48,180 @@ class SunnysideSeatingArea(models.Model):
     )
 
 
+class SunnysideSeatingType(models.Model):
+    _name = 'sunnyside.seating.type'
+    _description = 'Sunnyside Beach Seating Type'
+    _order = 'sequence, name, id'
+
+    name = fields.Char(
+        string='Seating Type',
+        required=True,
+    )
+    code = fields.Char(
+        required=True,
+        readonly=True,
+        copy=False,
+        index=True,
+    )
+    is_builtin = fields.Boolean(
+        string='Built-in Type',
+        default=False,
+        readonly=True,
+        copy=False,
+    )
+    active = fields.Boolean(
+        default=True,
+        help='Archived types cannot be assigned to new seating units.',
+    )
+    sequence = fields.Integer(default=10)
+    capacity_min = fields.Integer(
+        string='Minimum Allowed Guests',
+        required=True,
+        default=1,
+    )
+    capacity_max = fields.Integer(
+        string='Maximum Allowed Guests',
+        required=True,
+        default=4,
+    )
+    pricing_mode = fields.Selection(
+        selection=[
+            ('per_guest', 'Per Guest'),
+            ('fixed', 'Fixed'),
+        ],
+        required=True,
+        default='per_guest',
+    )
+    price_per_guest = fields.Float(default=20000.0)
+    fixed_price = fields.Float(default=0.0)
+    entry_fee_amount = fields.Float(default=5000.0)
+    minimum_spend_amount = fields.Float(default=15000.0)
+
+    _code_uniq = models.Constraint(
+        'UNIQUE(code)',
+        'Seating type codes must be unique.',
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        used_codes = set(
+            self.with_context(active_test=False).search([]).mapped('code')
+        )
+        prepared_vals = []
+        for values in vals_list:
+            values = dict(values)
+            if not values.get('code'):
+                base_code = re.sub(
+                    r'[^a-z0-9]+',
+                    '_',
+                    (values.get('name') or '').strip().lower(),
+                ).strip('_') or 'type'
+                code = 'custom_' + base_code
+                suffix = 2
+                while code in used_codes:
+                    code = 'custom_%s_%s' % (base_code, suffix)
+                    suffix += 1
+                values['code'] = code
+            elif not values.get('is_builtin') and (
+                not isinstance(values['code'], str)
+                or not values['code'].startswith('custom_')
+            ):
+                raise ValidationError(
+                    _("Custom seating type codes must use the custom_ prefix.")
+                )
+            used_codes.add(values['code'])
+            prepared_vals.append(values)
+        return super().create(prepared_vals)
+
+    def write(self, vals):
+        if 'code' in vals and any(record.code != vals['code'] for record in self):
+            raise UserError(_("A seating type's code cannot be changed after creation."))
+        if 'is_builtin' in vals:
+            raise UserError(_("The built-in type flag is managed by the system."))
+        protected_builtin_fields = {
+            'name', 'active', 'capacity_min', 'capacity_max', 'pricing_mode',
+            'price_per_guest', 'fixed_price', 'entry_fee_amount',
+            'minimum_spend_amount',
+        }
+        if self.filtered('is_builtin') and protected_builtin_fields.intersection(vals):
+            raise UserError(_("Built-in seating types are managed by the system."))
+        return super().write(vals)
+
+    @api.constrains('capacity_min', 'capacity_max')
+    def _check_capacity_rules(self):
+        Unit = self.env['sunnyside.seating.unit'].sudo()
+        for seating_type in self:
+            if seating_type.capacity_min < 1:
+                raise ValidationError(_("Minimum allowed guests must be at least 1."))
+            if seating_type.capacity_max < seating_type.capacity_min:
+                raise ValidationError(
+                    _("Maximum allowed guests cannot be lower than the minimum.")
+                )
+            units = Unit.with_context(active_test=False).search([
+                ('seating_type', '=', seating_type.code),
+            ])
+            if any(
+                unit.capacity_min < seating_type.capacity_min
+                or unit.capacity_max > seating_type.capacity_max
+                for unit in units
+            ):
+                raise ValidationError(
+                    _("Capacity rules cannot exclude capacity already configured on a seating unit.")
+                )
+
+    @api.constrains(
+        'pricing_mode', 'price_per_guest', 'fixed_price',
+        'entry_fee_amount', 'minimum_spend_amount',
+    )
+    def _check_pricing_defaults(self):
+        for seating_type in self:
+            if min(
+                seating_type.price_per_guest,
+                seating_type.fixed_price,
+                seating_type.entry_fee_amount,
+                seating_type.minimum_spend_amount,
+            ) < 0:
+                raise ValidationError(_("Pricing defaults cannot be negative."))
+            if seating_type.pricing_mode == 'fixed' and seating_type.fixed_price <= 0:
+                raise ValidationError(_("A fixed-price type must have a positive fixed price."))
+            if seating_type.pricing_mode == 'per_guest' and seating_type.price_per_guest <= 0:
+                raise ValidationError(_("A per-guest type must have a positive guest price."))
+
+    @api.constrains('active')
+    def _check_archive_usage(self):
+        Unit = self.env['sunnyside.seating.unit'].sudo()
+        Booking = self.env['sunnyside.booking'].sudo()
+        for seating_type in self.filtered(lambda item: not item.active):
+            if (
+                Unit.with_context(active_test=False).search_count([
+                    ('seating_type', '=', seating_type.code),
+                ])
+                or Booking.with_context(active_test=False).search_count([
+                    ('seating_type', '=', seating_type.code),
+                ])
+            ):
+                raise UserError(
+                    _("A seating type used by a unit or booking cannot be archived.")
+                )
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_protected_types(self):
+        if self.filtered('is_builtin'):
+            raise UserError(_("Built-in seating types cannot be deleted."))
+        Unit = self.env['sunnyside.seating.unit'].sudo()
+        Booking = self.env['sunnyside.booking'].sudo()
+        for seating_type in self:
+            if (
+                Unit.with_context(active_test=False).search_count([
+                    ('seating_type', '=', seating_type.code),
+                ])
+                or Booking.with_context(active_test=False).search_count([
+                    ('seating_type', '=', seating_type.code),
+                ])
+            ):
+                raise UserError(_("A seating type used by a unit or booking cannot be deleted."))
+
+
 class SunnysideSeatingUnit(models.Model):
     _name = 'sunnyside.seating.unit'
     _description = 'Sunnyside Beach Seating Unit'
@@ -61,11 +245,7 @@ class SunnysideSeatingUnit(models.Model):
         help='Archive state for the seating unit.',
     )
     seating_type = fields.Selection(
-        selection=[
-            ('table', 'Standard Table'),
-            ('beachfront_seat', 'Beachfront Seat'),
-            ('cabana', 'Cabana'),
-        ],
+        selection=seating_type_selection,
         string='Seating Type',
         required=True,
         default='table',
@@ -166,79 +346,60 @@ class SunnysideSeatingUnit(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        for vals in vals_list:
-            stype = vals.get('seating_type', 'table')
-            if stype == 'table':
-                vals.setdefault('capacity_min', 1)
-                vals.setdefault('capacity_max', 4)
-                vals.setdefault('pricing_mode', 'per_guest')
-                vals.setdefault('price_per_guest', 20000.0)
-                vals.setdefault('entry_fee_amount', 5000.0)
-                vals.setdefault('minimum_spend_amount', 15000.0)
-                vals.setdefault('fixed_price', 0.0)
-            elif stype == 'beachfront_seat':
-                vals.setdefault('capacity_min', 1)
-                vals.setdefault('capacity_max', 1)
-                vals.setdefault('pricing_mode', 'per_guest')
-                vals.setdefault('price_per_guest', 20000.0)
-                vals.setdefault('entry_fee_amount', 5000.0)
-                vals.setdefault('minimum_spend_amount', 15000.0)
-                vals.setdefault('fixed_price', 0.0)
-            elif stype == 'cabana':
-                vals.setdefault('capacity_min', 1)
-                vals.setdefault('capacity_max', 9)
-                vals.setdefault('pricing_mode', 'fixed')
-                vals.setdefault('fixed_price', 250000.0)
-                vals.setdefault('price_per_guest', 0.0)
-                vals.setdefault('entry_fee_amount', 0.0)
-                vals.setdefault('minimum_spend_amount', 0.0)
+        Type = self.env['sunnyside.seating.type']
+        for values in vals_list:
+            code = values.get('seating_type', 'table')
+            seating_type = Type.search([
+                ('code', '=', code),
+                ('active', '=', True),
+            ], limit=1)
+            if not seating_type:
+                raise ValidationError(_("Choose an active seating type."))
+            for field_name in (
+                'capacity_min', 'capacity_max', 'pricing_mode',
+                'price_per_guest', 'fixed_price', 'entry_fee_amount',
+                'minimum_spend_amount',
+            ):
+                values.setdefault(field_name, seating_type[field_name])
         return super().create(vals_list)
 
     @api.onchange('seating_type')
     def _onchange_seating_type_defaults(self):
-        """Set approved business configuration defaults when seating_type changes."""
-        if self.seating_type == 'table':
-            self.capacity_min = 1
-            self.capacity_max = 4
-            self.pricing_mode = 'per_guest'
-            self.price_per_guest = 20000.0
-            self.entry_fee_amount = 5000.0
-            self.minimum_spend_amount = 15000.0
-            self.fixed_price = 0.0
-        elif self.seating_type == 'beachfront_seat':
-            self.capacity_min = 1
-            self.capacity_max = 1
-            self.pricing_mode = 'per_guest'
-            self.price_per_guest = 20000.0
-            self.entry_fee_amount = 5000.0
-            self.minimum_spend_amount = 15000.0
-            self.fixed_price = 0.0
-        elif self.seating_type == 'cabana':
-            self.capacity_min = 1
-            self.capacity_max = 9
-            self.pricing_mode = 'fixed'
-            self.fixed_price = 250000.0
-            self.price_per_guest = 0.0
-            self.entry_fee_amount = 0.0
-            self.minimum_spend_amount = 0.0
+        seating_type = self.env['sunnyside.seating.type'].search([
+            ('code', '=', self.seating_type),
+            ('active', '=', True),
+        ], limit=1)
+        if seating_type:
+            for field_name in (
+                'capacity_min', 'capacity_max', 'pricing_mode',
+                'price_per_guest', 'fixed_price', 'entry_fee_amount',
+                'minimum_spend_amount',
+            ):
+                self[field_name] = seating_type[field_name]
 
     @api.constrains('capacity_min', 'capacity_max', 'seating_type')
     def _check_capacities(self):
+        Type = self.env['sunnyside.seating.type'].sudo()
         for unit in self:
             if unit.capacity_min < 1:
                 raise ValidationError(_("Minimum capacity must be at least 1 guest."))
             if unit.capacity_max < unit.capacity_min:
                 raise ValidationError(_("Maximum capacity cannot be lower than minimum capacity."))
 
-            if unit.seating_type == 'table':
-                if unit.capacity_max > 4:
-                    raise ValidationError(_("Standard table capacity cannot exceed 4 guests."))
-            elif unit.seating_type == 'beachfront_seat':
-                if unit.capacity_min != 1 or unit.capacity_max != 1:
-                    raise ValidationError(_("Beachfront seat capacity must be exactly 1 guest."))
-            elif unit.seating_type == 'cabana':
-                if unit.capacity_max > 9:
-                    raise ValidationError(_("Cabana capacity cannot exceed 9 guests."))
+            seating_type = Type.search([
+                ('code', '=', unit.seating_type),
+                ('active', '=', True),
+            ], limit=1)
+            if not seating_type:
+                raise ValidationError(_("Choose an active seating type."))
+            if unit.capacity_min < seating_type.capacity_min:
+                raise ValidationError(
+                    _("Minimum capacity is below the configured limit for this seating type.")
+                )
+            if unit.capacity_max > seating_type.capacity_max:
+                raise ValidationError(
+                    _("Maximum capacity exceeds the configured limit for this seating type.")
+                )
 
     @api.constrains('pricing_mode', 'price_per_guest', 'fixed_price', 'entry_fee_amount', 'minimum_spend_amount')
     def _check_pricing_values(self):
@@ -274,6 +435,14 @@ class SunnysideSeatingUnit(models.Model):
 
         # 1. Active Areas
         Area = self.env['sunnyside.seating.area']
+        seating_types = self.env['sunnyside.seating.type'].search(
+            [('active', '=', True)],
+            order='sequence, name, id',
+        )
+        seating_type_labels = {
+            seating_type.code: seating_type.name
+            for seating_type in seating_types
+        }
         all_areas = Area.search([('active', '=', True)], order='sequence, name, id')
         areas_data = [{
             'id': a.id,
@@ -354,7 +523,10 @@ class SunnysideSeatingUnit(models.Model):
                 'area_id': u.area_id.id,
                 'area_name': u.area_id.name,
                 'seating_type': u.seating_type,
-                'seating_type_label': dict(u._fields['seating_type'].selection).get(u.seating_type, u.seating_type),
+                'seating_type_label': seating_type_labels.get(
+                    u.seating_type,
+                    u.seating_type,
+                ),
                 'capacity_min': u.capacity_min,
                 'capacity_max': u.capacity_max,
                 'pricing_mode': u.pricing_mode,
@@ -385,6 +557,10 @@ class SunnysideSeatingUnit(models.Model):
                 'total_areas': len(all_areas),
             },
             'areas': areas_data,
+            'seating_types': [{
+                'code': seating_type.code,
+                'name': seating_type.name,
+            } for seating_type in seating_types],
             'units': units_data,
             'currency': {
                 'id': currency.id,
@@ -397,19 +573,19 @@ class SunnysideSeatingUnit(models.Model):
     def get_checked_in_visits(self, search_query=None, visitor_id=None):
         """
         Return checked-in visits eligible for seating assignment.
-        Visits with an existing active reserved booking are excluded.
+        Visitors with an existing active reserved booking are excluded.
         """
         Visit = self.env['sunnyside.visit']
         Booking = self.env['sunnyside.booking']
 
-        # Visits currently having an active reservation
-        reserved_visit_ids = Booking.search([
+        # A visitor must not appear through another checked-in visit if seated.
+        reserved_visitor_ids = Booking.search([
             ('state', '=', 'reserved')
-        ]).mapped('visit_id.id')
+        ]).mapped('visitor_id.id')
 
         domain = [
             ('state', '=', 'checked_in'),
-            ('id', 'not in', reserved_visit_ids if reserved_visit_ids else [0]),
+            ('visitor_id', 'not in', reserved_visitor_ids if reserved_visitor_ids else [0]),
         ]
 
         if visitor_id:

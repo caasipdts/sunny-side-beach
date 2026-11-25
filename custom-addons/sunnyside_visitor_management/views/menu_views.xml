@@ -4,6 +4,7 @@
     <menuitem id="menu_sunnyside_root"
               name="Sunnyside Beach"
               sequence="20"
+              groups="group_sunnyside_user"
               web_icon="sunnyside_visitor_management,static/description/icon.png"/>
 
     <!-- 1. Management Dashboard (Top Priority Menu) -->
@@ -94,21 +95,27 @@
               action="action_sunnyside_location"
               sequence="10"/>
 
+    <menuitem id="menu_sunnyside_seating_types"
+              name="Seating Types"
+              parent="menu_sunnyside_configuration"
+              action="action_sunnyside_seating_type"
+              sequence="15"/>
+
     <menuitem id="menu_sunnyside_seating_areas"
               name="Seating Areas"
               parent="menu_sunnyside_configuration"
               action="action_sunnyside_seating_area"
-              sequence="20"/>
+              sequence="25"/>
 
     <menuitem id="menu_sunnyside_seating_units"
               name="Seating Units"
               parent="menu_sunnyside_configuration"
               action="action_sunnyside_seating_unit"
-              sequence="25"/>
+              sequence="30"/>
 
     <menuitem id="menu_sunnyside_seating_images"
               name="Seating Photographs"
               parent="menu_sunnyside_configuration"
               action="action_sunnyside_seating_image"
-              sequence="30"/>
+              sequence="35"/>
 </odoo>

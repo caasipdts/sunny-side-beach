@@ -1,0 +1,18 @@
+[odoo]
+url = http://127.0.0.1:8069
+database = odoo
+username = sync-worker
+password = REPLACE_WITH_SYNC_USER_PASSWORD
+
+[cloud]
+url = https://your-cloud-domain.example
+device_id = reception-laptop
+token_file = C:\ProgramData\SunnysideSync\sync_device_token
+verify_tls = true
+ca_file =
+
+[worker]
+online_interval = 15
+retry_min = 5
+retry_max = 60
+reconcile_interval = 3600

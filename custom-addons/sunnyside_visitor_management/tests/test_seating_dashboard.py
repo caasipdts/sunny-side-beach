@@ -426,16 +426,23 @@ class TestSunnysideSeatingDashboard(TransactionCase):
             'source': 'qr_code',
             'state': 'cancelled',
         })
+        duplicate_visit = self.Visit.create({
+            'visitor_id': self.visitor.id,
+            'location_id': self.location.id,
+            'source': 'qr_code',
+        })
         visits = self.Unit.get_checked_in_visits(visitor_id=self.visitor.id)
         visit_ids = [v['id'] for v in visits]
         self.assertIn(self.visit.id, visit_ids)
+        self.assertIn(duplicate_visit.id, visit_ids)
         self.assertNotIn(cancelled_visit.id, visit_ids)
 
-        # Once self.visit has an active reservation, it must no longer appear
+        # Once the visitor has an active reservation, none of their visits appear.
         self.Booking.create_booking(self.visit.id, self.table_unit.id, 2)
         visits_after = self.Unit.get_checked_in_visits(visitor_id=self.visitor.id)
         visit_ids_after = [v['id'] for v in visits_after]
         self.assertNotIn(self.visit.id, visit_ids_after)
+        self.assertNotIn(duplicate_visit.id, visit_ids_after)
 
     # -------------------------------------------------------------------------
     # Test 09: Visitor context is correctly passed from visitor profiles

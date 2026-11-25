@@ -27,6 +27,7 @@ Foundational module for managing beach visitors and check-ins:
         'security/ir.model.access.csv',
         'data/ir_sequence_data.xml',
         'data/locations.xml',
+        'data/seating_type_data.xml',
         'wizard/checkin_wizard_views.xml',
         'views/location_views.xml',
         'views/visit_views.xml',

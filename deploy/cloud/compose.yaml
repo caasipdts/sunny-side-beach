@@ -1,0 +1,132 @@
+services:
+  db:
+    image: ${POSTGRES_IMAGE:-postgres:15-bookworm}
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets:
+      - postgres_password
+    volumes:
+      - cloud_db_data:/var/lib/postgresql/data/pgdata
+    networks:
+      - database
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  odoo:
+    image: ${ODOO_IMAGE:-odoo:19.0}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      PORT: 5432
+      USER: odoo
+      PASSWORD_FILE: /run/secrets/postgres_password
+      SUNNYSIDE_SYNC_ORIGIN: cloud
+      SUNNYSIDE_SYNC_DEVICE_ID: ${SYNC_DEVICE_ID:-reception-laptop}
+      SUNNYSIDE_SYNC_DEVICE_TOKEN_FILE: /run/secrets/sync_device_token
+    secrets:
+      - postgres_password
+      - source: odoo_config
+        target: /etc/odoo/odoo.conf
+      - sync_device_token
+    volumes:
+      - cloud_odoo_data:/var/lib/odoo
+      - ../../custom-addons:/mnt/extra-addons:ro
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.conf
+      - --database=sunnyside_cloud
+      - --init=sunnyside_visitor_management,sunnyside_sync
+      - --without-demo=all
+      - --proxy-mode
+    networks:
+      - database
+      - proxy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8069/web/login >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  caddy:
+    image: ${CADDY_IMAGE:-caddy:2}
+    depends_on:
+      odoo:
+        condition: service_healthy
+    environment:
+      CLOUD_DOMAIN: ${CLOUD_DOMAIN:-localhost}
+    ports:
+      - "${CLOUD_BIND_ADDRESS:-127.0.0.1}:80:80"
+      - "${CLOUD_BIND_ADDRESS:-127.0.0.1}:443:443"
+      - "${CLOUD_BIND_ADDRESS:-127.0.0.1}:443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - proxy
+    restart: unless-stopped
+
+  worker:
+    profiles: [worker]
+    build:
+      context: ../../custom-addons/sunnyside_sync
+      dockerfile: Dockerfile.worker
+    depends_on:
+      odoo:
+        condition: service_healthy
+      caddy:
+        condition: service_started
+    environment:
+      SUNNYSIDE_SYNC_CONFIG: /run/secrets/worker_config
+      SUNNYSIDE_SYNC_ODOO_URL: ${WORKER_ODOO_URL:-http://host.docker.internal:8069}
+      SUNNYSIDE_SYNC_CLOUD_URL: https://caddy
+      SUNNYSIDE_SYNC_DEVICE_ID: ${SYNC_DEVICE_ID:-reception-laptop}
+      SUNNYSIDE_SYNC_TOKEN_FILE: /run/secrets/sync_device_token
+      SUNNYSIDE_SYNC_VERIFY_TLS: "true"
+      SUNNYSIDE_SYNC_CA_FILE: /run/secrets/cloud_local_ca
+      SUNNYSIDE_SYNC_LOCK_FILE: /home/worker/.local/share/SunnysideSync/worker.lock
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    secrets:
+      - worker_config
+      - sync_device_token
+      - cloud_local_ca
+    networks:
+      - proxy
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+volumes:
+  cloud_db_data:
+  cloud_odoo_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  database:
+    internal: true
+  proxy:
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password
+  odoo_config:
+    file: ./secrets/odoo.conf
+  sync_device_token:
+    file: ./secrets/sync_device_token
+  worker_config:
+    file: ./secrets/worker.ini
+  cloud_local_ca:
+    file: ./secrets/cloud_local_ca.crt

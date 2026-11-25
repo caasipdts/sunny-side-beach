@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sunnyside_sync_outbox_list" model="ir.ui.view">
+        <field name="name">sunnyside.sync.outbox.list</field>
+        <field name="model">sunnyside.sync.outbox</field>
+        <field name="arch" type="xml">
+            <list string="Synchronization Outbox">
+                <field name="seq"/>
+                <field name="model"/>
+                <field name="record_uuid"/>
+                <field name="op"/>
+                <field name="rev"/>
+                <field name="status"/>
+                <field name="attempts"/>
+                <field name="last_error"/>
+                <field name="created_at"/>
+                <field name="acked_at"/>
+                <button name="action_retry" type="object" string="Retry" groups="sunnyside_sync.group_sunnyside_sync_manager" invisible="status != 'quarantined'"/>
+                <button name="action_discard" type="object" string="Discard" groups="sunnyside_sync.group_sunnyside_sync_manager" invisible="status != 'quarantined'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_sync_session_list" model="ir.ui.view">
+        <field name="name">sunnyside.sync.session.list</field>
+        <field name="model">sunnyside.sync.session</field>
+        <field name="arch" type="xml">
+            <list string="Synchronization Sessions">
+                <field name="uuid"/>
+                <field name="direction"/>
+                <field name="status"/>
+                <field name="started_at"/>
+                <field name="ended_at"/>
+                <field name="counts"/>
+                <field name="last_error"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_sync_device_list" model="ir.ui.view">
+        <field name="name">sunnyside.sync.device.list</field>
+        <field name="model">sunnyside.sync.device</field>
+        <field name="arch" type="xml">
+            <list string="Synchronization Devices">
+                <field name="name"/>
+                <field name="device_id"/>
+                <field name="active"/>
+                <field name="last_seen_at"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_sync_conflict_list" model="ir.ui.view">
+        <field name="name">sunnyside.sync.conflict.list</field>
+        <field name="model">sunnyside.sync.conflict</field>
+        <field name="arch" type="xml">
+            <list string="Synchronization Conflicts">
+                <field name="model"/>
+                <field name="record_uuid"/>
+                <field name="local_rev"/>
+                <field name="incoming_rev"/>
+                <field name="resolved"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sunnyside_sync_quarantine_list" model="ir.ui.view">
+        <field name="name">sunnyside.sync.quarantine.list</field>
+        <field name="model">sunnyside.sync.quarantine</field>
+        <field name="arch" type="xml">
+            <list string="Cloud Sync Quarantine">
+                <field name="create_date"/>
+                <field name="device_id"/>
+                <field name="model"/>
+                <field name="record_uuid"/>
+                <field name="session_uuid"/>
+                <field name="chunk_no"/>
+                <field name="reason"/>
+                <field name="state"/>
+                <button name="action_retry" type="object" string="Retry" groups="sunnyside_sync.group_sunnyside_sync_manager" invisible="state != 'open'"/>
+                <button name="action_discard" type="object" string="Discard" groups="sunnyside_sync.group_sunnyside_sync_manager" invisible="state != 'open'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_sunnyside_sync_outbox" model="ir.actions.act_window">
+        <field name="name">Outbox</field>
+        <field name="res_model">sunnyside.sync.outbox</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('status', 'in', ['pending', 'quarantined'])]</field>
+    </record>
+    <record id="action_sunnyside_sync_sessions" model="ir.actions.act_window">
+        <field name="name">Sessions</field>
+        <field name="res_model">sunnyside.sync.session</field>
+        <field name="view_mode">list</field>
+    </record>
+    <record id="action_sunnyside_sync_devices" model="ir.actions.act_window">
+        <field name="name">Devices</field>
+        <field name="res_model">sunnyside.sync.device</field>
+        <field name="view_mode">list</field>
+    </record>
+    <record id="action_sunnyside_sync_conflicts" model="ir.actions.act_window">
+        <field name="name">Conflicts</field>
+        <field name="res_model">sunnyside.sync.conflict</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('resolved', '=', False)]</field>
+    </record>
+    <record id="action_sunnyside_sync_quarantine" model="ir.actions.act_window">
+        <field name="name">Cloud Quarantine</field>
+        <field name="res_model">sunnyside.sync.quarantine</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('state', '=', 'open')]</field>
+    </record>
+
+    <menuitem id="menu_sunnyside_sync_root" name="Synchronization"
+              parent="base.menu_administration" sequence="90"
+              groups="sunnyside_sync.group_sunnyside_sync_manager"/>
+    <menuitem id="menu_sunnyside_sync_outbox" name="Outbox"
+              parent="menu_sunnyside_sync_root" action="action_sunnyside_sync_outbox"
+              sequence="10"/>
+    <menuitem id="menu_sunnyside_sync_sessions" name="Sessions"
+              parent="menu_sunnyside_sync_root" action="action_sunnyside_sync_sessions"
+              sequence="20"/>
+    <menuitem id="menu_sunnyside_sync_devices" name="Devices"
+              parent="menu_sunnyside_sync_root" action="action_sunnyside_sync_devices"
+              sequence="30"/>
+    <menuitem id="menu_sunnyside_sync_conflicts" name="Conflicts"
+              parent="menu_sunnyside_sync_root" action="action_sunnyside_sync_conflicts"
+              sequence="40"/>
+    <menuitem id="menu_sunnyside_sync_quarantine" name="Cloud Quarantine"
+              parent="menu_sunnyside_sync_root" action="action_sunnyside_sync_quarantine"
+              sequence="50"/>
+</odoo>

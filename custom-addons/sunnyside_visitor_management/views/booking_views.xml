@@ -122,6 +122,7 @@
                 <field name="visit_id" string="Visit Reference"/>
                 <field name="unit_id" string="Seating Unit"/>
                 <field name="area_id" string="Seating Area"/>
+                <field name="seating_type" string="Seating Type"/>
                 <filter string="Reserved" name="filter_reserved" domain="[('state', '=', 'reserved')]"/>
                 <filter string="Released" name="filter_released" domain="[('state', '=', 'released')]"/>
                 <separator/>
@@ -214,6 +215,7 @@
                 <field name="visit_id" string="Visit Reference"/>
                 <field name="unit_id" string="Seating Unit"/>
                 <field name="area_id" string="Seating Area"/>
+                <field name="seating_type" string="Seating Type"/>
                 <field name="reserved_by_id" string="Receptionist"/>
 
                 <!-- Reservation State Filters (Both Reserved & Released Available) -->
@@ -369,6 +371,7 @@
                 <field name="visit_id" string="Visit Reference"/>
                 <field name="unit_id" string="Seating Unit"/>
                 <field name="area_id" string="Seating Area"/>
+                <field name="seating_type" string="Seating Type"/>
                 <field name="reserved_by_id" string="Receptionist"/>
 
                 <!-- Outstanding Balances and Payment Status Filters -->

@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sunnyside_sync_outbox,sunnyside.sync.outbox,model_sunnyside_sync_outbox,group_sunnyside_sync_user,1,1,1,1
+access_sunnyside_sync_session,sunnyside.sync.session,model_sunnyside_sync_session,group_sunnyside_sync_user,1,1,1,1
+access_sunnyside_sync_chunk,sunnyside.sync.chunk,model_sunnyside_sync_chunk,group_sunnyside_sync_user,1,1,1,1
+access_sunnyside_sync_state,sunnyside.sync.state,model_sunnyside_sync_state,group_sunnyside_sync_user,1,1,1,1
+access_sunnyside_sync_change_manager,sunnyside.sync.change,model_sunnyside_sync_change,group_sunnyside_sync_manager,1,0,0,0
+access_sunnyside_sync_device_manager,sunnyside.sync.device,model_sunnyside_sync_device,group_sunnyside_sync_manager,1,1,1,1
+access_sunnyside_sync_push_log_manager,sunnyside.sync.push.log,model_sunnyside_sync_push_log,group_sunnyside_sync_manager,1,0,0,0
+access_sunnyside_sync_conflict_manager,sunnyside.sync.conflict,model_sunnyside_sync_conflict,group_sunnyside_sync_manager,1,1,1,0
+access_sunnyside_sync_quarantine_manager,sunnyside.sync.quarantine,model_sunnyside_sync_quarantine,group_sunnyside_sync_manager,1,1,1,1
+access_sunnyside_sync_tombstone_manager,sunnyside.sync.tombstone,model_sunnyside_sync_tombstone,group_sunnyside_sync_manager,1,0,0,0

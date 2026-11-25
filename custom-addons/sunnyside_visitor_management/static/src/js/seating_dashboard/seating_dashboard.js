@@ -25,6 +25,7 @@ export class SeatingDashboard extends Component {
                 total_areas: 0,
             },
             areas: [],
+            seatingTypes: [],
             units: [],
             currency: {
                 symbol: '₦',
@@ -35,7 +36,7 @@ export class SeatingDashboard extends Component {
             selectedAreaId: null, // null for 'All'
             searchQuery: '',
             statusFilter: 'all', // 'all', 'available', 'reserved'
-            typeFilter: 'all', // 'all', 'table', 'beachfront_seat', 'cabana'
+            typeFilter: 'all',
 
             // Workflow A/B Context
             contextVisitorId: null,
@@ -141,6 +142,7 @@ export class SeatingDashboard extends Component {
 
             this.state.metrics = data.metrics || this.state.metrics;
             this.state.areas = data.areas || [];
+            this.state.seatingTypes = data.seating_types || [];
             this.state.units = data.units || [];
             this.state.currency = data.currency || this.state.currency;
         } catch (err) {
@@ -228,8 +230,9 @@ export class SeatingDashboard extends Component {
             case 'cabana':
                 return 'fa-home';
             case 'table':
-            default:
                 return 'fa-cutlery';
+            default:
+                return 'fa-th-large';
         }
     }
 
@@ -350,19 +353,6 @@ export class SeatingDashboard extends Component {
             form.formError = _t(`Guest count cannot exceed maximum capacity of ${unit.capacity_max}.`);
             return;
         }
-        if (unit.seating_type === 'table' && form.guestCount > 4) {
-            form.formError = _t("Standard tables cannot accommodate more than 4 guests.");
-            return;
-        }
-        if (unit.seating_type === 'beachfront_seat' && form.guestCount !== 1) {
-            form.formError = _t("Beachfront seats accommodate exactly 1 guest.");
-            return;
-        }
-        if (unit.seating_type === 'cabana' && form.guestCount > 9) {
-            form.formError = _t("Cabanas cannot accommodate more than 9 guests.");
-            return;
-        }
-
         const estPrice = this.getEstimatedBookingPrice(unit, form.guestCount);
         if (form.recordPaymentNow && form.paymentAmount > estPrice) {
             form.formError = _t(`Payment amount cannot exceed booking total of ${this.formatCurrency(estPrice)}.`);

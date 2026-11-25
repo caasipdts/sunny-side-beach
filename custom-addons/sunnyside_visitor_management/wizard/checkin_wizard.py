@@ -284,13 +284,6 @@ class SunnysideCheckinWizard(models.TransientModel):
                     'count': guest_count, 'max': unit.capacity_max, 'unit': unit.name,
                 }
             )
-        if unit.seating_type == 'table' and guest_count > 4:
-            raise ValidationError(_("Standard tables cannot accommodate more than 4 guests."))
-        if unit.seating_type == 'beachfront_seat' and guest_count != 1:
-            raise ValidationError(_("Beachfront seats must have exactly 1 guest."))
-        if unit.seating_type == 'cabana' and guest_count > 9:
-            raise ValidationError(_("Cabanas cannot accommodate more than 9 guests."))
-
     def _validate_payment_input(self):
         """Validate the optional payment input before committing."""
         self.ensure_one()
