@@ -541,6 +541,101 @@ class TestSunnysideSyncCapture(TransactionCase):
             ('reason', '!=', False),
         ]))
 
+    # ── Sync Engine Optimization Tests ──────────────────────────────────────
+
+    def test_vacuum_prunes_old_acknowledged_outbox_and_chunks(self):
+        """Auto-vacuum removes acked outbox events and chunks older than retention."""
+        SyncState = self.env['sunnyside.sync.state']
+        Outbox = self.env['sunnyside.sync.outbox']
+        Session = self.env['sunnyside.sync.session']
+        Chunk = self.env['sunnyside.sync.chunk']
+
+        # Create an old acknowledged outbox event (8 days ago)
+        old_date = fields.Datetime.subtract(fields.Datetime.now(), days=8)
+        old_event = Outbox.create({
+            'model': 'res.partner',
+            'record_uuid': str(uuid.uuid4()),
+            'op': 'create',
+            'rev': 1,
+            'status': 'acked',
+            'acked_at': old_date,
+        })
+        # Create a recent acknowledged outbox event (1 day ago)
+        recent_date = fields.Datetime.subtract(fields.Datetime.now(), days=1)
+        recent_event = Outbox.create({
+            'model': 'res.partner',
+            'record_uuid': str(uuid.uuid4()),
+            'op': 'update',
+            'rev': 2,
+            'status': 'acked',
+            'acked_at': recent_date,
+        })
+        # Create an old session+chunk (8 days ago) using raw SQL to backdate create_date
+        session = Session.create({'direction': 'push', 'status': 'complete'})
+        old_chunk = Chunk.create({
+            'session_id': session.id,
+            'chunk_no': 1,
+            'payload': [{'test': True}],
+            'status': 'acked',
+        })
+        self.env.cr.execute(
+            "UPDATE sunnyside_sync_chunk SET create_date = %s WHERE id = %s",
+            (old_date, old_chunk.id),
+        )
+        old_chunk.invalidate_recordset()
+
+        result = SyncState.vacuum_acknowledged_records(retention_days=7)
+
+        self.assertGreaterEqual(result['chunks_pruned'], 1)
+        self.assertGreaterEqual(result['outbox_pruned'], 1)
+        self.assertFalse(old_event.exists())
+        self.assertTrue(recent_event.exists())
+
+    def test_serialize_records_batch_returns_multiple_items(self):
+        """Batch serialization returns items for existing records."""
+        visitor1 = self.Partner.create({
+            'name': 'Batch Test Visitor 1',
+            'is_sunnyside_visitor': True,
+        })
+        visitor2 = self.Partner.create({
+            'name': 'Batch Test Visitor 2',
+            'is_sunnyside_visitor': True,
+        })
+        protocol = self.env['sunnyside.sync.protocol']
+
+        items = protocol.serialize_records_batch(
+            'res.partner',
+            [visitor1.sync_uuid, visitor2.sync_uuid],
+        )
+
+        self.assertEqual(len(items), 2)
+        returned_uuids = {item['uuid'] for item in items}
+        self.assertIn(visitor1.sync_uuid, returned_uuids)
+        self.assertIn(visitor2.sync_uuid, returned_uuids)
+
+    def test_serialize_records_batch_skips_nonexistent(self):
+        """Batch serialization gracefully handles missing UUIDs."""
+        visitor = self.Partner.create({
+            'name': 'Batch Test Visitor Solo',
+            'is_sunnyside_visitor': True,
+        })
+        protocol = self.env['sunnyside.sync.protocol']
+
+        items = protocol.serialize_records_batch(
+            'res.partner',
+            [visitor.sync_uuid, str(uuid.uuid4())],
+        )
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]['uuid'], visitor.sync_uuid)
+
+    def test_serialize_records_batch_rejects_invalid_model(self):
+        """Batch serialization rejects unsupported models."""
+        protocol = self.env['sunnyside.sync.protocol']
+
+        with self.assertRaises(Exception):
+            protocol.serialize_records_batch('unsupported.model', [str(uuid.uuid4())])
+
     def test_local_cloud_pull_wins_equal_revision_conflict(self):
         remote_uuid = str(uuid.uuid4())
         visitor = self.Partner.with_context(sync_applying=_SYNC_APPLY_TOKEN).create({

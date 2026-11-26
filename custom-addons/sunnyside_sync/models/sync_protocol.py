@@ -186,6 +186,26 @@ class SunnysideSyncProtocol(models.AbstractModel):
         }
 
     @api.model
+    def serialize_records_batch(self, model_name, record_uuids):
+        """
+        Serializes multiple records of model_name matching record_uuids in a single batch.
+        Dramatically improves reconciliation performance by replacing N+1 calls with 1 batch.
+        """
+        if model_name not in SYNC_MODELS:
+            raise ValidationError(_("Unsupported synchronization model."))
+        if not record_uuids or not isinstance(record_uuids, list):
+            return []
+
+        # Limit batch size to protect memory
+        record_uuids = record_uuids[:MAX_CHUNK_ITEMS]
+        results = []
+        for r_uuid in record_uuids:
+            item = self.serialize_record(model_name, r_uuid)
+            if item:
+                results.append(item)
+        return results
+
+    @api.model
     def _location(self, name):
         if not name:
             return self.env['sunnyside.location']

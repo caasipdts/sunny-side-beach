@@ -129,13 +129,22 @@ class SyncWorker:
             _LOGGER.warning('TLS certificate verification is disabled.')
             self.ssl_context = ssl._create_unverified_context()
         self.online_interval = config['worker'].getint('online_interval', fallback=15)
+        self.max_idle_interval = config['worker'].getint(
+            'max_idle_interval',
+            fallback=min(300, max(60, self.online_interval * 6)),
+        )
         self.retry_min = config['worker'].getint('retry_min', fallback=5)
         self.retry_max = config['worker'].getint('retry_max', fallback=60)
         self.reconcile_interval = config['worker'].getint(
             'reconcile_interval',
             fallback=3600,
         )
+        self.vacuum_interval = config['worker'].getint(
+            'vacuum_interval',
+            fallback=86400,
+        )
         self.last_reconcile_at = 0
+        self.last_vacuum_at = 0
         self.lock_path = config['worker'].get(
             'lock_file',
             str(Path(os.environ.get('LOCALAPPDATA', Path.home()))
@@ -215,6 +224,7 @@ class SyncWorker:
             'worker_open_session',
             'push',
         )
+        pushed_count = 0
         try:
             while not self.stop_event.is_set():
                 chunk = self.rpc.call(
@@ -239,6 +249,7 @@ class SyncWorker:
                     chunk['id'],
                     response,
                 )
+                pushed_count += len(chunk.get('payload', []))
                 self._record_result(True, elapsed_ms)
         except (WorkerError, xmlrpc.client.Error, OSError) as error:
             self.rpc.call(
@@ -248,7 +259,7 @@ class SyncWorker:
                 str(error),
             )
             self._record_result(False, error=str(error))
-            return False
+            return False, pushed_count
 
         self.rpc.call(
             'sunnyside.sync.state',
@@ -256,7 +267,7 @@ class SyncWorker:
             session_uuid,
             False,
         )
-        return True
+        return True, pushed_count
 
     def pull_all(self):
         status = self.rpc.call('sunnyside.sync.state', 'worker_status')
@@ -267,6 +278,7 @@ class SyncWorker:
             'worker_open_session',
             'pull',
         )
+        pulled_count = 0
         try:
             while not self.stop_event.is_set():
                 query = urllib.parse.urlencode({
@@ -289,6 +301,7 @@ class SyncWorker:
                         new_cursor,
                     )
                     cursor = new_cursor
+                    pulled_count += len(items) if items else 0
                     self._record_result(True, elapsed_ms)
                 if not items or next_cursor <= scan_after:
                     break
@@ -301,14 +314,14 @@ class SyncWorker:
                 str(error),
             )
             self._record_result(False, error=str(error))
-            return False
+            return False, pulled_count
         self.rpc.call(
             'sunnyside.sync.state',
             'worker_close_session',
             session_uuid,
             False,
         )
-        return True
+        return True, pulled_count
 
     def _local_manifest(self, model):
         entries = []
@@ -360,6 +373,7 @@ class SyncWorker:
         for model in _SYNC_MODELS:
             local = self._local_manifest(model)
             cloud = self._cloud_manifest(model)
+            missing_remote_uuids = []
             for record_uuid, remote_entry in cloud.items():
                 local_entry = local.get(record_uuid)
                 if local_entry and local_entry['rev'] > remote_entry['rev']:
@@ -370,26 +384,50 @@ class SyncWorker:
                         record_uuid,
                     )
                     continue
-                query = urllib.parse.urlencode({
-                    'model': model,
-                    'record_uuid': record_uuid,
-                })
-                item, elapsed_ms = self._request_json(
-                    '/sunnyside_sync/v1/record?' + query
-                )
-                if (
-                    not isinstance(item, dict)
-                    or item.get('model') != model
-                    or item.get('uuid') != record_uuid
-                ):
-                    raise WorkerError('Cloud API returned an invalid reconciled record.')
-                self.rpc.call(
-                    'sunnyside.sync.state',
-                    'worker_apply_remote',
-                    [item],
-                    cursor,
-                )
-                self._record_result(True, elapsed_ms)
+                if not local_entry or local_entry['rev'] < remote_entry['rev']:
+                    missing_remote_uuids.append(record_uuid)
+
+            # High-efficiency batch fetching: fetch up to 100 missing records per request
+            for i in range(0, len(missing_remote_uuids), 100):
+                chunk_uuids = missing_remote_uuids[i:i + 100]
+                try:
+                    response, elapsed_ms = self._request_json(
+                        '/sunnyside_sync/v1/records/batch',
+                        method='POST',
+                        payload={'model': model, 'uuids': chunk_uuids},
+                    )
+                    items = response.get('items', [])
+                    if items:
+                        self.rpc.call(
+                            'sunnyside.sync.state',
+                            'worker_apply_remote',
+                            items,
+                            cursor,
+                        )
+                        self._record_result(True, elapsed_ms)
+                except WorkerError as err:
+                    # Fallback for cloud endpoints without batch route
+                    _LOGGER.info('Batch endpoint unavailable (%s); falling back to single record fetch.', err)
+                    for r_uuid in chunk_uuids:
+                        query = urllib.parse.urlencode({
+                            'model': model,
+                            'record_uuid': r_uuid,
+                        })
+                        item, elapsed_ms = self._request_json(
+                            '/sunnyside_sync/v1/record?' + query
+                        )
+                        if (
+                            isinstance(item, dict)
+                            and item.get('model') == model
+                            and item.get('uuid') == r_uuid
+                        ):
+                            self.rpc.call(
+                                'sunnyside.sync.state',
+                                'worker_apply_remote',
+                                [item],
+                                cursor,
+                            )
+                            self._record_result(True, elapsed_ms)
 
             for record_uuid in local.keys() - cloud.keys():
                 self.rpc.call(
@@ -402,32 +440,64 @@ class SyncWorker:
 
     def run_once(self):
         if not self.check_cloud():
-            return False
+            return False, False
         status = self.rpc.call('sunnyside.sync.state', 'worker_status')
         if status['state'] not in ('online', 'degraded'):
-            return False
-        if not self.push_all():
-            return False
-        if not self.pull_all():
-            return False
+            return False, False
+
+        push_ok, pushed_count = self.push_all()
+        if not push_ok:
+            return False, False
+
+        pull_ok, pulled_count = self.pull_all()
+        if not pull_ok:
+            return False, False
+
         now = time.monotonic()
+        # Periodic database auto-vacuum to prevent outbox/chunk table bloat
+        if now - self.last_vacuum_at >= self.vacuum_interval:
+            try:
+                self.rpc.call('sunnyside.sync.state', 'worker_vacuum', 7)
+                self.last_vacuum_at = now
+            except Exception as error:
+                _LOGGER.warning('Sync worker auto-vacuum failed: %s', error)
+
+        # Periodic reconciliation check
         if now - self.last_reconcile_at >= self.reconcile_interval:
             if not self.reconcile_all():
-                return False
+                return False, (pushed_count + pulled_count > 0)
             self.last_reconcile_at = now
-        return True
+
+        had_activity = (pushed_count + pulled_count) > 0
+        return True, had_activity
 
     def run(self):
         retry_delay = self.retry_min
+        current_delay = self.online_interval
         with SingleInstanceLock(self.lock_path):
-            _LOGGER.info('Sunnyside sync worker started for device %s.', self.device_id)
+            _LOGGER.info(
+                'Sunnyside sync worker started for device %s (online=%ss, max_idle=%ss).',
+                self.device_id,
+                self.online_interval,
+                self.max_idle_interval,
+            )
             while not self.stop_event.is_set():
                 try:
-                    connected = self.run_once()
+                    connected, had_activity = self.run_once()
                     status = self.rpc.call('sunnyside.sync.state', 'worker_status')
                     if connected and status['state'] in ('online', 'degraded'):
                         retry_delay = self.retry_min
-                        delay = self.online_interval
+                        if had_activity:
+                            # Immediate fast-polling when there is ongoing activity
+                            current_delay = self.online_interval
+                            delay = self.online_interval
+                        else:
+                            # Smooth exponential backoff when idle to save CPU, battery, and bandwidth
+                            delay = current_delay
+                            current_delay = min(
+                                self.max_idle_interval,
+                                max(self.online_interval, int(current_delay * 1.5)),
+                            )
                     else:
                         delay = retry_delay
                         retry_delay = min(self.retry_max, max(self.retry_min, retry_delay * 2))

@@ -763,3 +763,37 @@ class SunnysideSyncState(models.Model):
             'pull_cursor': state.pull_cursor,
             'last_error': state.last_error or '',
         }
+
+    @api.model
+    def vacuum_acknowledged_records(self, retention_days=7):
+        """
+        Prunes acknowledged outbox events and frozen sync chunks older than retention_days.
+        Prevents unbounded database growth on the local client machine and cloud database.
+        """
+        cutoff = fields.Datetime.subtract(fields.Datetime.now(), days=retention_days)
+        Chunk = self.env['sunnyside.sync.chunk'].sudo()
+        Outbox = self.env['sunnyside.sync.outbox'].sudo()
+
+        old_chunks = Chunk.search([('create_date', '<', cutoff)])
+        chunk_count = len(old_chunks)
+        if old_chunks:
+            old_chunks.unlink()
+
+        old_outbox = Outbox.search([
+            ('status', '=', 'acked'),
+            ('acked_at', '<', cutoff),
+        ])
+        outbox_count = len(old_outbox)
+        if old_outbox:
+            old_outbox.unlink()
+
+        return {
+            'chunks_pruned': chunk_count,
+            'outbox_pruned': outbox_count,
+        }
+
+    @api.model
+    def worker_vacuum(self, retention_days=7):
+        """Worker XML-RPC wrapper for auto-vacuuming acknowledged records."""
+        self._require_worker()
+        return self.vacuum_acknowledged_records(retention_days=retention_days)

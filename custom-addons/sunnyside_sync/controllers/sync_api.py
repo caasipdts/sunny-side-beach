@@ -1,3 +1,5 @@
+import json
+
 from odoo import fields, http, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.http import request
@@ -169,3 +171,35 @@ class SunnysideSyncController(http.Controller):
         if not item:
             return self._response({'error': 'record_not_found'}, status=404)
         return self._response(item)
+
+    @http.route(
+        '/sunnyside_sync/v1/records/batch',
+        type='http',
+        auth='public',
+        methods=['POST'],
+        csrf=False,
+        save_session=False,
+    )
+    def records_batch(self, **kwargs):
+        device, error = self._authenticated_request()
+        if error:
+            return error
+        try:
+            payload = json.loads(request.httprequest.get_data() or '{}')
+        except ValueError:
+            return self._response({'error': 'invalid_json'}, status=400)
+
+        model = payload.get('model')
+        uuids = payload.get('uuids', [])
+        if not model or not isinstance(uuids, list):
+            return self._response({'error': 'invalid_parameters'}, status=400)
+
+        try:
+            items = request.env['sunnyside.sync.protocol'].sudo().serialize_records_batch(
+                model,
+                uuids,
+            )
+        except ValidationError as err:
+            return self._response({'error': 'invalid_record', 'message': str(err)}, status=400)
+
+        return self._response({'model': model, 'items': items})

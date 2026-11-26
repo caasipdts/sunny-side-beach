@@ -16,3 +16,9 @@ online_interval = 15
 retry_min = 5
 retry_max = 60
 reconcile_interval = 3600
+; Maximum polling delay (seconds) during idle periods.
+; The worker backs off from online_interval up to this cap when no data is moving.
+max_idle_interval = 300
+; How often (seconds) the worker auto-vacuums acknowledged outbox events and chunks.
+; Set to 0 to disable auto-vacuum (the server-side cron still runs daily).
+vacuum_interval = 86400
