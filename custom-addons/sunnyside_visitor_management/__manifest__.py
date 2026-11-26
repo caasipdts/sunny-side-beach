@@ -21,6 +21,7 @@ Foundational module for managing beach visitors and check-ins:
         'web',
         'website',
         'mail',
+        'contacts',
     ],
     'data': [
         'security/security.xml',

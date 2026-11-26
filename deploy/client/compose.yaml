@@ -1,0 +1,113 @@
+services:
+  db:
+    image: ${POSTGRES_IMAGE:-postgres:15-bookworm}
+    container_name: sunnyside-client-db
+    command:
+      - postgres
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - max_connections=30
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=32MB
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets:
+      - postgres_password
+    volumes:
+      - client_db_data:/var/lib/postgresql/data/pgdata
+    networks:
+      - internal
+    restart: unless-stopped
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  odoo:
+    image: ${ODOO_IMAGE:-odoo:19.0}
+    container_name: sunnyside-client-odoo
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      PORT: 5432
+      USER: odoo
+      PASSWORD_FILE: /run/secrets/postgres_password
+      SUNNYSIDE_SYNC_ORIGIN: local
+    secrets:
+      - postgres_password
+      - source: odoo_config
+        target: /etc/odoo/odoo.conf
+    volumes:
+      - client_odoo_data:/var/lib/odoo
+      - ../../custom-addons:/mnt/extra-addons:ro
+    ports:
+      - "127.0.0.1:8069:8069"
+    command:
+      - odoo
+      - --config=/etc/odoo/odoo.conf
+      - --database=sunnyside_local
+      - --init=contacts,sunnyside_visitor_management,sunnyside_sync
+      - --without-demo=all
+    networks:
+      - internal
+    restart: unless-stopped
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8069/web/login >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
+  worker:
+    build:
+      context: ../../custom-addons/sunnyside_sync
+      dockerfile: Dockerfile.worker
+    container_name: sunnyside-client-sync-worker
+    depends_on:
+      odoo:
+        condition: service_healthy
+    environment:
+      SUNNYSIDE_SYNC_CONFIG: /run/secrets/worker_config
+      SUNNYSIDE_SYNC_ODOO_URL: http://odoo:8069
+      SUNNYSIDE_SYNC_ODOO_DATABASE: sunnyside_local
+      SUNNYSIDE_SYNC_CLOUD_URL: ${CLOUD_URL:-https://your-cloud-domain.example}
+      SUNNYSIDE_SYNC_DEVICE_ID: ${SYNC_DEVICE_ID:-reception-desk-1}
+      SUNNYSIDE_SYNC_TOKEN_FILE: /run/secrets/sync_device_token
+      SUNNYSIDE_SYNC_VERIFY_TLS: ${VERIFY_TLS:-true}
+    secrets:
+      - source: worker_config
+        target: /run/secrets/worker_config
+      - sync_device_token
+    networks:
+      - internal
+    restart: unless-stopped
+    mem_limit: 64m
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password
+  odoo_config:
+    file: ./secrets/odoo.conf
+  sync_device_token:
+    file: ./secrets/sync_device_token
+  worker_config:
+    file: ./secrets/worker.ini
+
+volumes:
+  client_db_data:
+  client_odoo_data:
+
+networks:
+  internal:
+    driver: bridge

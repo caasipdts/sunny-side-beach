@@ -1,6 +1,16 @@
 services:
   db:
     image: ${POSTGRES_IMAGE:-postgres:15-bookworm}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - max_connections=40
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=32MB
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: odoo
@@ -44,7 +54,7 @@ services:
       - odoo
       - --config=/etc/odoo/odoo.conf
       - --database=sunnyside_cloud
-      - --init=sunnyside_visitor_management,sunnyside_sync
+      - --init=contacts,sunnyside_visitor_management,sunnyside_sync
       - --without-demo=all
       - --proxy-mode
     networks:
