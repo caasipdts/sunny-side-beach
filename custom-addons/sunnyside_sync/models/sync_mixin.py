@@ -22,14 +22,12 @@ class SunnysideSyncMixin(models.AbstractModel):
     )
     sync_origin = fields.Selection(
         selection=[('local', 'Local'), ('cloud', 'Cloud')],
-        required=True,
         default=lambda self: os.environ.get('SUNNYSIDE_SYNC_ORIGIN', 'local'),
         copy=False,
         help='Database where this record was first created.',
     )
     sync_rev = fields.Integer(
         string='Synchronization Revision',
-        required=True,
         default=1,
         copy=False,
         help='Incremented for each local business-data edit.',
