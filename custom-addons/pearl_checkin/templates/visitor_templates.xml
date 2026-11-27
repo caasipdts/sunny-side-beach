@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================== -->
+    <!-- 1. Public Visitor Check-in Portal Template                         -->
+    <!-- ================================================================== -->
+    <template id="checkin_page" name="Pearl Check-In">
+        <t t-call="website.layout" no_header="True" no_footer="True">
+            <t t-set="additional_title">Pearl Check-In</t>
+            <div id="wrap" class="oe_structure visitor-checkin-page">
+                <main class="visitor-checkin-shell">
+
+                    <!-- Direct Cache-busted Stylesheet Link -->
+                    <link rel="stylesheet" type="text/css" href="/pearl_checkin/static/src/css/visitor_checkin.css?v=19.0.3.2"/>
+
+                    <!-- Centered Circular Logo -->
+                    <div class="text-center mb-3">
+                        <img src="/pearl_checkin/static/src/img/pearl_logo.jpg?v=2" 
+                             class="visitor-checkin-logo" 
+                             alt="Pearl Logo"/>
+                    </div>
+
+                    <!-- Heading -->
+                    <h1 class="visitor-checkin-title">
+                        Complete Your Pearl Check-In
+                    </h1>
+
+                    <!-- Main Form (Directly on Ambient Background) -->
+                    <form id="visitorCheckinForm" action="/pearl/check-in" method="post" class="visitor-checkin-form">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="submission_token" id="submission_token" t-att-value="submission_token"/>
+                        <input type="hidden" name="source" id="source" t-att-value="source"/>
+                        <input type="hidden" name="country_dial_code" id="country_dial_code" t-att-value="default_dial_code or values.get('country_dial_code', '234')"/>
+                        <input type="hidden" name="country_code" id="country_code" t-att-value="default_country_code or values.get('country_code', 'NG')"/>
+                        <input type="hidden" name="action" id="form_action" t-att-value="'register' if screen == 2 else 'lookup'"/>
+                        <input type="hidden" name="privacy_acknowledged" id="privacy_acknowledged" value="1"/>
+
+                        <!-- Happy to Have You Here Alert Banner -->
+                        <div id="lookupMessage" t-attf-class="alert visitor-checkin-banner text-center py-2 #{'' if screen == 2 else 'd-none'}" role="status">
+                            <div class="fw-bold">Happy to Have You Here!</div>
+                            <div class="small">Just a few details and you're all set!</div>
+                        </div>
+
+                        <!-- Phone / WhatsApp Field Row -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold mb-1 visitor-checkin-label" for="phone">Phone / WhatsApp *</label>
+                            <div class="input-group visitor-checkin-phone-row">
+                                <input type="tel" 
+                                       class="form-control s_website_form_input visitor-checkin-control" 
+                                       name="phone" 
+                                       id="phone" 
+                                       t-att-value="values.get('phone', '')"
+                                       required="required" 
+                                       autocomplete="tel" 
+                                       inputmode="tel" 
+                                       aria-describedby="phoneValidationMessage" 
+                                       placeholder="+234"/>
+                                <button type="button" id="lookupBtn" class="btn fw-bold visitor-checkin-primary">Check-In</button>
+                                <button type="button" id="changePhoneBtn" class="btn visitor-checkin-change" hidden="hidden">Change number</button>
+                            </div>
+                            <p id="phoneValidationMessage" class="small text-warning mt-1 mb-0" role="alert" hidden="hidden">
+                                Enter a valid phone number with 8 to 15 digits.
+                            </p>
+                        </div>
+
+                        <!-- New Registration Fields (Revealed on new visitor) -->
+                        <div id="newRegistrationFields" t-att-hidden="None if screen == 2 else 'hidden'">
+                            
+                            <!-- Your Name Field -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold mb-1 visitor-checkin-label" for="name">Your Name *</label>
+                                <input type="text" 
+                                       class="form-control s_website_form_input visitor-checkin-control" 
+                                       name="name" 
+                                       id="name" 
+                                       t-att-value="values.get('name', '')"
+                                       autocomplete="name" 
+                                       placeholder="Enter your name"/>
+                                <div id="name_feedback" class="invalid-feedback d-block text-warning small d-none">
+                                    <t t-out="errors.get('name', '')"/>
+                                </div>
+                            </div>
+
+                            <!-- Area / Location Dropdown (Remains a dropdown as instructed) -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold mb-1 visitor-checkin-label" for="location_id">Area / Location *</label>
+                                <select name="location_id"
+                                        id="location_id"
+                                        class="form-select s_website_form_input visitor-checkin-control">
+                                    <option value="" disabled="disabled" t-att-selected="'selected' if not values.get('location_id') else None">
+                                        Your area or location
+                                    </option>
+                                    <t t-foreach="locations" t-as="loc">
+                                        <option t-att-value="loc.id" t-att-selected="'selected' if str(values.get('location_id')) == str(loc.id) else None">
+                                            <t t-out="loc.name"/>
+                                        </option>
+                                    </t>
+                                </select>
+                                <div id="location_feedback" class="invalid-feedback d-block text-warning small d-none">
+                                    <t t-out="errors.get('location_id', '')"/>
+                                </div>
+                            </div>
+
+                            <!-- Email Field (Optional) -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold mb-1 visitor-checkin-label" for="email">Email</label>
+                                <input type="email" 
+                                       class="form-control s_website_form_input visitor-checkin-control" 
+                                       name="email" 
+                                       id="email" 
+                                       t-att-value="values.get('email', '')"
+                                       autocomplete="email" 
+                                       inputmode="email" 
+                                       placeholder="name@example.com"/>
+                                <div id="email_feedback" class="invalid-feedback d-block text-warning small d-none">
+                                    <t t-out="errors.get('email', '')"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Details & Submit -->
+                        <div id="additionalDetails" t-att-hidden="None if screen == 2 else 'hidden'">
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" 
+                                       name="marketing_consent" 
+                                       id="marketing_consent" 
+                                       class="form-check-input" 
+                                       value="1"
+                                       t-att-checked="'checked' if values.get('marketing_consent') in ('1', True, 'true') else None"/>
+                                <label class="form-check-label small visitor-checkin-consent" for="marketing_consent">
+                                    Send me exclusive promos, discounts, and loyalty updates.
+                                </label>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" id="submitBtn" class="btn fw-bold visitor-checkin-primary">Submit</button>
+                            </div>
+                        </div>
+                    </form>
+                </main>
+            </div>
+
+            <!-- Client Script with cache-busting -->
+            <script type="text/javascript" src="/pearl_checkin/static/src/js/visitor_checkin.js?v=19.0.3.2"></script>
+        </t>
+    </template>
+
+    <!-- ================================================================== -->
+    <!-- 2. Public Visitor Check-in Complete Template                       -->
+    <!-- ================================================================== -->
+    <template id="checkin_success" name="Pearl Check-In Complete">
+        <t t-call="website.layout" no_header="True" no_footer="True">
+            <t t-set="additional_title">Pearl Check-In Complete</t>
+            <div id="wrap" class="visitor-checkin-page visitor-checkin-success">
+                <main class="visitor-checkin-success-card">
+                    <!-- Direct Cache-busted Stylesheet Link -->
+                    <link rel="stylesheet" type="text/css" href="/pearl_checkin/static/src/css/visitor_checkin.css?v=19.0.3.2"/>
+
+                    <div class="text-center mb-3">
+                        <img src="/pearl_checkin/static/src/img/pearl_logo.jpg?v=2" 
+                             class="visitor-checkin-logo" 
+                             alt="Pearl Logo"/>
+                    </div>
+                    <h1 class="visitor-checkin-title">
+                        You're Checked-In, <t t-out="partner.name if partner else (visitor.name if visitor else 'Odoo')"/>!
+                    </h1>
+                    <p class="visitor-checkin-message">
+                        Enjoy your time with us! 🌴
+                    </p>
+
+                    <a t-attf-href="/pearl/check-in?source=#{source or 'qr_code'}" class="btn fw-bold visitor-checkin-primary">Back to home</a>
+                </main>
+            </div>
+        </t>
+    </template>
+
+    <!-- ================================================================== -->
+    <!-- 3. Dedicated Privacy Policy Page Template                          -->
+    <!-- ================================================================== -->
+    <template id="privacy_policy" name="Pearl Restaurant Privacy Policy">
+        <t t-call="website.layout">
+            <t t-set="additional_title">Pearl Restaurant Privacy Policy</t>
+            <div id="wrap" class="oe_structure oe_empty visitor-checkin-page py-4 py-md-5">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-12 col-md-8 col-lg-7">
+                            <div class="card visitor-checkin-success-card text-start">
+                                <div class="card-body p-4 p-md-5 text-secondary">
+                                    <div class="text-center mb-4">
+                                        <i class="fa fa-shield text-warning fs-1 mb-2"></i>
+                                        <h1 class="h3 fw-bold text-dark">Pearl Restaurant Privacy Policy</h1>
+                                        <p class="text-muted small">Visitor Management Data Protection &amp; Terms</p>
+                                    </div>
+                                    
+                                    <h5 class="fw-bold text-dark mt-4">1. Scope and Applicability</h5>
+                                    <p>
+                                        This policy applies to all visitors registering at Pearl Restaurant via our physical entrance QR codes or official web check-in portal.
+                                    </p>
+
+                                    <h5 class="fw-bold text-dark mt-4">2. Information Collection</h5>
+                                    <p>
+                                        To maintain safety, emergency readiness, and monitor venue capacity, we collect minimal visitor contact data:
+                                    </p>
+                                    <ul>
+                                        <li>Full Name</li>
+                                        <li>Mobile Phone Number (formatted to international standard)</li>
+                                        <li>Optional Email Address</li>
+                                        <li>Originating Area / Neighbourhood</li>
+                                        <li>Timestamp and entry location of each visit</li>
+                                    </ul>
+
+                                    <h5 class="fw-bold text-dark mt-4">3. Data Usage &amp; Consent</h5>
+                                    <p>
+                                        Your registration acknowledges operational use for beach attendance. We do not automatically enroll visitors in promotional marketing lists. Marketing communications require explicit, separate opt-in consent.
+                                    </p>
+
+                                    <div class="mt-4 pt-3 border-top text-center">
+                                        <a href="/pearl/check-in" class="btn visitor-checkin-primary rounded-3 px-4">
+                                            <i class="fa fa-arrow-left me-1"></i> Return to Check-in
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

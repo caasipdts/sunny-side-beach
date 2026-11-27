@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Booking Form View -->
+    <record id="view_pearl_booking_form" model="ir.ui.view">
+        <field name="name">pearl.booking.form</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <form string="Seating Booking">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="reserved,released"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Booking Reference"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <field name="payment_status" widget="badge"
+                                   decoration-success="payment_status == 'paid'"
+                                   decoration-warning="payment_status == 'partial'"
+                                   decoration-danger="payment_status == 'unpaid'"/>
+                            <field name="state" widget="badge"
+                                   decoration-primary="state == 'reserved'"
+                                   decoration-muted="state == 'released'"/>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="Visitor &amp; Check-in">
+                            <field name="visitor_id" readonly="1" options="{'no_create': True}"/>
+                            <field name="visit_id" readonly="1" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Seating Assignment">
+                            <field name="area_id" readonly="1" options="{'no_create': True}"/>
+                            <field name="unit_id" readonly="1" options="{'no_create': True}"/>
+                            <field name="guest_count" readonly="1"/>
+                            <field name="seating_type" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Pricing Snapshot">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="pricing_mode" readonly="1"/>
+                            <field name="unit_price" readonly="1" widget="monetary"/>
+                            <field name="entry_fee_amount" readonly="1" widget="monetary"/>
+                            <field name="minimum_spend_amount" readonly="1" widget="monetary"/>
+                            <field name="amount_total" readonly="1" widget="monetary"/>
+                        </group>
+                        <group string="Payment Tracking">
+                            <field name="amount_paid" readonly="1" widget="monetary"/>
+                            <field name="amount_due" readonly="1" widget="monetary"/>
+                            <field name="payment_status" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Audit &amp; Lifecycle">
+                        <group>
+                            <field name="reserved_by_id" readonly="1"/>
+                            <field name="reserved_datetime" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="released_by_id" readonly="1"/>
+                            <field name="released_datetime" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Payments" name="page_payments">
+                            <field name="payment_ids" readonly="1">
+                                <list string="Payments" create="0" delete="0">
+                                    <field name="payment_datetime" string="Date &amp; Time"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="amount" widget="monetary"/>
+                                    <field name="payment_method" widget="badge"/>
+                                    <field name="reference"/>
+                                    <field name="user_id" string="Recorded By"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Booking List View -->
+    <record id="view_pearl_booking_list" model="ir.ui.view">
+        <field name="name">pearl.booking.list</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <list string="Seating Bookings" default_order="reserved_datetime desc, id desc">
+                <field name="name" string="Booking Ref"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="visit_id" string="Visit Ref"/>
+                <field name="area_id" string="Area"/>
+                <field name="unit_id" string="Seating Unit"/>
+                <field name="guest_count" string="Guests"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount_total" string="Total" widget="monetary"/>
+                <field name="amount_paid" string="Paid" widget="monetary"/>
+                <field name="amount_due" string="Outstanding" widget="monetary"/>
+                <field name="payment_status" widget="badge"
+                       decoration-success="payment_status == 'paid'"
+                       decoration-warning="payment_status == 'partial'"
+                       decoration-danger="payment_status == 'unpaid'"/>
+                <field name="state" widget="badge"
+                       decoration-primary="state == 'reserved'"
+                       decoration-muted="state == 'released'"/>
+                <field name="reserved_datetime" string="Booking Date"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Booking Search View -->
+    <record id="view_pearl_booking_search" model="ir.ui.view">
+        <field name="name">pearl.booking.search</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <search string="Search Bookings">
+                <field name="name" string="Booking Reference"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="visit_id" string="Visit Reference"/>
+                <field name="unit_id" string="Seating Unit"/>
+                <field name="area_id" string="Seating Area"/>
+                <field name="seating_type" string="Seating Type"/>
+                <filter string="Reserved" name="filter_reserved" domain="[('state', '=', 'reserved')]"/>
+                <filter string="Released" name="filter_released" domain="[('state', '=', 'released')]"/>
+                <separator/>
+                <filter string="Unpaid" name="filter_unpaid" domain="[('payment_status', '=', 'unpaid')]"/>
+                <filter string="Partially Paid" name="filter_partial" domain="[('payment_status', '=', 'partial')]"/>
+                <filter string="Paid" name="filter_paid" domain="[('payment_status', '=', 'paid')]"/>
+                <group>
+                    <filter string="Seating Area" name="group_area" context="{'group_by': 'area_id'}"/>
+                    <filter string="State" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Payment Status" name="group_payment_status" context="{'group_by': 'payment_status'}"/>
+                    <filter string="Visitor" name="group_visitor" context="{'group_by': 'visitor_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Booking Action Window -->
+    <record id="action_pearl_booking" model="ir.actions.act_window">
+        <field name="name">Seating Bookings</field>
+        <field name="res_model">pearl.booking</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_pearl_booking_search"/>
+        <field name="context">{'search_default_filter_reserved': 1}</field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!-- Management Reporting: Seating & Bookings Analytics           -->
+    <!-- ============================================================ -->
+
+    <!-- Booking Reporting Graph View -->
+    <record id="view_pearl_booking_reporting_graph" model="ir.ui.view">
+        <field name="name">pearl.booking.reporting.graph</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <graph string="Seating &amp; Bookings Analysis" type="bar" sample="1">
+                <field name="reserved_datetime" interval="day"/>
+                <field name="seating_type"/>
+                <field name="guest_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Booking Reporting Pivot View -->
+    <record id="view_pearl_booking_reporting_pivot" model="ir.ui.view">
+        <field name="name">pearl.booking.reporting.pivot</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <pivot string="Seating &amp; Bookings Matrix Analysis" sample="1">
+                <field name="reserved_datetime" interval="day" type="row"/>
+                <field name="area_id" type="row"/>
+                <field name="seating_type" type="col"/>
+                <field name="guest_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Booking Operational Reporting List View (Financial Fields Excluded) -->
+    <record id="view_pearl_booking_reporting_list" model="ir.ui.view">
+        <field name="name">pearl.booking.reporting.list</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <list string="Seating &amp; Bookings Analysis" create="0" delete="0" edit="0"
+                  default_order="reserved_datetime desc, id desc"
+                  decoration-primary="state == 'reserved'"
+                  decoration-muted="state == 'released'">
+                <field name="name" string="Booking Reference"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="visit_id" string="Visit Reference"/>
+                <field name="unit_id" string="Seating Unit"/>
+                <field name="area_id" string="Seating Area"/>
+                <field name="seating_type" string="Seating Type" widget="badge"/>
+                <field name="guest_count" string="Guests" sum="Total Guests"/>
+                <field name="reserved_datetime" string="Reservation Date"/>
+                <field name="state" string="Status" widget="badge"
+                       decoration-primary="state == 'reserved'"
+                       decoration-muted="state == 'released'"/>
+                <field name="reserved_by_id" string="Receptionist" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Booking Dedicated Reporting Search View -->
+    <record id="view_pearl_booking_reporting_search" model="ir.ui.view">
+        <field name="name">pearl.booking.reporting.search</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <search string="Search Seating &amp; Bookings Analysis">
+                <field name="name" string="Booking Reference"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="visit_id" string="Visit Reference"/>
+                <field name="unit_id" string="Seating Unit"/>
+                <field name="area_id" string="Seating Area"/>
+                <field name="seating_type" string="Seating Type"/>
+                <field name="reserved_by_id" string="Receptionist"/>
+
+                <!-- Reservation State Filters (Both Reserved & Released Available) -->
+                <filter string="Active (Reserved)" name="filter_reserved" domain="[('state', '=', 'reserved')]"/>
+                <filter string="Released (Historical)" name="filter_released" domain="[('state', '=', 'released')]"/>
+                <separator/>
+
+                <!-- Relative & Custom Date Filters based on Reservation Datetime -->
+                <filter name="filter_today" string="Today" domain="[('reserved_datetime', '&gt;=', 'today'), ('reserved_datetime', '&lt;', 'today +1d')]"/>
+                <filter name="filter_yesterday" string="Yesterday" domain="[('reserved_datetime', '&gt;=', 'today -1d'), ('reserved_datetime', '&lt;', 'today')]"/>
+                <filter name="filter_this_week" string="This Week" domain="[('reserved_datetime', '&gt;=', '=week_start'), ('reserved_datetime', '&lt;', '=week_start +1w')]"/>
+                <filter name="filter_this_month" string="This Month" domain="[('reserved_datetime', '&gt;=', 'today =1d'), ('reserved_datetime', '&lt;', 'today =1d +1m')]"/>
+                <filter name="filter_this_year" string="This Year" domain="[('reserved_datetime', '&gt;=', 'today =1m =1d'), ('reserved_datetime', '&lt;', 'today =1m =1d +1y')]"/>
+                <filter name="filter_reserved_date" string="Reservation Date" date="reserved_datetime"/>
+                <separator/>
+
+                <!-- Seating Type Quick Filters -->
+                <filter string="Cabanas" name="filter_type_cabana" domain="[('seating_type', '=', 'cabana')]"/>
+                <filter string="Tables" name="filter_type_table" domain="[('seating_type', '=', 'table')]"/>
+                <filter string="Beachfront Seats" name="filter_type_beachfront" domain="[('seating_type', '=', 'beachfront_seat')]"/>
+
+                <group>
+                    <filter string="Reservation Day" name="group_reserved_date_day" context="{'group_by': 'reserved_datetime:day'}"/>
+                    <filter string="Reservation Month" name="group_reserved_date_month" context="{'group_by': 'reserved_datetime:month'}"/>
+                    <filter string="Seating Type" name="group_seating_type" context="{'group_by': 'seating_type'}"/>
+                    <filter string="Seating Area" name="group_area" context="{'group_by': 'area_id'}"/>
+                    <filter string="Seating Unit" name="group_unit" context="{'group_by': 'unit_id'}"/>
+                    <filter string="Reservation State" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Receptionist" name="group_reserved_by" context="{'group_by': 'reserved_by_id'}"/>
+                    <filter string="Visitor" name="group_visitor" context="{'group_by': 'visitor_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Booking Reporting Action Window -->
+    <record id="action_pearl_booking_reporting" model="ir.actions.act_window">
+        <field name="name">Seating &amp; Bookings Analysis</field>
+        <field name="res_model">pearl.booking</field>
+        <field name="view_mode">graph,pivot,list,form</field>
+        <field name="search_view_id" ref="view_pearl_booking_reporting_search"/>
+        <field name="context">{'search_default_group_reserved_date_day': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No seating booking data to analyze yet.
+            </p>
+            <p>
+                Use this report to analyze beach seating reservation trends, popular seating areas,
+                guest volumes, and historical unit turnover.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action View Explicit Sequence Mappings -->
+    <record id="action_pearl_booking_reporting_graph" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_pearl_booking_reporting_graph"/>
+        <field name="act_window_id" ref="action_pearl_booking_reporting"/>
+    </record>
+
+    <record id="action_pearl_booking_reporting_pivot" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="view_pearl_booking_reporting_pivot"/>
+        <field name="act_window_id" ref="action_pearl_booking_reporting"/>
+    </record>
+
+    <record id="action_pearl_booking_reporting_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="3"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_pearl_booking_reporting_list"/>
+        <field name="act_window_id" ref="action_pearl_booking_reporting"/>
+    </record>
+
+    <!-- ============================================================ -->
+    <!-- Management Reporting: Outstanding Balances & Receivables     -->
+    <!-- Restricted to Pearl Managers                            -->
+    <!-- ============================================================ -->
+
+    <!-- Receivables Reporting List View -->
+    <record id="view_pearl_booking_receivables_list" model="ir.ui.view">
+        <field name="name">pearl.booking.receivables.list</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <list string="Outstanding Balances &amp; Receivables" create="0" delete="0" edit="0"
+                  default_order="amount_due desc, reserved_datetime desc, id desc"
+                  decoration-danger="amount_due &gt; 0 and payment_status == 'unpaid'"
+                  decoration-warning="amount_due &gt; 0 and payment_status == 'partial'"
+                  decoration-success="payment_status == 'paid'">
+                <field name="name" string="Booking Reference"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="visitor_phone" string="Visitor Phone" optional="show"/>
+                <field name="area_id" string="Seating Area"/>
+                <field name="unit_id" string="Seating Unit"/>
+                <field name="seating_type" string="Seating Type" widget="badge"/>
+                <field name="guest_count" string="Guests"/>
+                <field name="reserved_datetime" string="Reservation Date"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount_total" string="Total Value" widget="monetary" sum="Total Value"/>
+                <field name="amount_paid" string="Amount Paid" widget="monetary" sum="Total Paid"/>
+                <field name="amount_due" string="Outstanding Balance" widget="monetary" sum="Total Outstanding"/>
+                <field name="payment_status" string="Payment Status" widget="badge"
+                       decoration-danger="payment_status == 'unpaid'"
+                       decoration-warning="payment_status == 'partial'"
+                       decoration-success="payment_status == 'paid'"/>
+                <field name="state" string="Status" widget="badge"
+                       decoration-primary="state == 'reserved'"
+                       decoration-muted="state == 'released'"/>
+                <field name="reserved_by_id" string="Receptionist" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Receivables Reporting Pivot View -->
+    <record id="view_pearl_booking_receivables_pivot" model="ir.ui.view">
+        <field name="name">pearl.booking.receivables.pivot</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <pivot string="Receivables &amp; Balances Matrix Analysis" sample="1">
+                <field name="area_id" type="row"/>
+                <field name="unit_id" type="row"/>
+                <field name="payment_status" type="col"/>
+                <field name="amount_due" type="measure"/>
+                <field name="amount_total" type="measure"/>
+                <field name="amount_paid" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Receivables Reporting Graph View -->
+    <record id="view_pearl_booking_receivables_graph" model="ir.ui.view">
+        <field name="name">pearl.booking.receivables.graph</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <graph string="Outstanding Balances by Seating Area" type="bar" sample="1">
+                <field name="area_id"/>
+                <field name="payment_status"/>
+                <field name="amount_due" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Receivables Dedicated Reporting Search View -->
+    <record id="view_pearl_booking_receivables_search" model="ir.ui.view">
+        <field name="name">pearl.booking.receivables.search</field>
+        <field name="model">pearl.booking</field>
+        <field name="arch" type="xml">
+            <search string="Search Outstanding Balances &amp; Receivables">
+                <field name="name" string="Booking Reference"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="visitor_phone" string="Visitor Phone"/>
+                <field name="visit_id" string="Visit Reference"/>
+                <field name="unit_id" string="Seating Unit"/>
+                <field name="area_id" string="Seating Area"/>
+                <field name="seating_type" string="Seating Type"/>
+                <field name="reserved_by_id" string="Receptionist"/>
+
+                <!-- Outstanding Balances and Payment Status Filters -->
+                <filter string="Outstanding Balances" name="filter_outstanding" domain="[('amount_due', '&gt;', 0)]"/>
+                <filter string="Unpaid Bookings" name="filter_unpaid" domain="[('payment_status', '=', 'unpaid')]"/>
+                <filter string="Partially Paid" name="filter_partial" domain="[('payment_status', '=', 'partial')]"/>
+                <filter string="Fully Paid" name="filter_paid" domain="[('payment_status', '=', 'paid')]"/>
+                <separator/>
+
+                <!-- Reservation State Filters (Released Bookings with Balances Must Remain Visible) -->
+                <filter string="Active (Reserved)" name="filter_reserved" domain="[('state', '=', 'reserved')]"/>
+                <filter string="Released (Historical)" name="filter_released" domain="[('state', '=', 'released')]"/>
+                <separator/>
+
+                <!-- Relative & Custom Date Filters based on Reservation Datetime -->
+                <filter name="filter_today" string="Today" domain="[('reserved_datetime', '&gt;=', 'today'), ('reserved_datetime', '&lt;', 'today +1d')]"/>
+                <filter name="filter_yesterday" string="Yesterday" domain="[('reserved_datetime', '&gt;=', 'today -1d'), ('reserved_datetime', '&lt;', 'today')]"/>
+                <filter name="filter_this_week" string="This Week" domain="[('reserved_datetime', '&gt;=', '=week_start'), ('reserved_datetime', '&lt;', '=week_start +1w')]"/>
+                <filter name="filter_this_month" string="This Month" domain="[('reserved_datetime', '&gt;=', 'today =1d'), ('reserved_datetime', '&lt;', 'today =1d +1m')]"/>
+                <filter name="filter_this_year" string="This Year" domain="[('reserved_datetime', '&gt;=', 'today =1m =1d'), ('reserved_datetime', '&lt;', 'today =1m =1d +1y')]"/>
+                <filter name="filter_reserved_date" string="Reservation Date" date="reserved_datetime"/>
+                <separator/>
+
+                <!-- Seating Type Quick Filters -->
+                <filter string="Cabanas" name="filter_type_cabana" domain="[('seating_type', '=', 'cabana')]"/>
+                <filter string="Tables" name="filter_type_table" domain="[('seating_type', '=', 'table')]"/>
+                <filter string="Beachfront Seats" name="filter_type_beachfront" domain="[('seating_type', '=', 'beachfront_seat')]"/>
+
+                <group>
+                    <filter string="Payment Status" name="group_payment_status" context="{'group_by': 'payment_status'}"/>
+                    <filter string="Seating Area" name="group_area" context="{'group_by': 'area_id'}"/>
+                    <filter string="Seating Type" name="group_seating_type" context="{'group_by': 'seating_type'}"/>
+                    <filter string="Seating Unit" name="group_unit" context="{'group_by': 'unit_id'}"/>
+                    <filter string="Reservation Day" name="group_reserved_date_day" context="{'group_by': 'reserved_datetime:day'}"/>
+                    <filter string="Reservation Month" name="group_reserved_date_month" context="{'group_by': 'reserved_datetime:month'}"/>
+                    <filter string="Receptionist" name="group_reserved_by" context="{'group_by': 'reserved_by_id'}"/>
+                    <filter string="Visitor" name="group_visitor" context="{'group_by': 'visitor_id'}"/>
+                    <filter string="Reservation State" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Receivables Reporting Action Window (Manager Restricted) -->
+    <record id="action_pearl_booking_receivables" model="ir.actions.act_window">
+        <field name="name">Outstanding Balances &amp; Receivables</field>
+        <field name="res_model">pearl.booking</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="search_view_id" ref="view_pearl_booking_receivables_search"/>
+        <field name="context">{'search_default_filter_outstanding': 1}</field>
+        <field name="group_ids" eval="[(4, ref('pearl_checkin.group_pearl_manager'))]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No outstanding balances recorded!
+            </p>
+            <p>
+                All seating bookings are currently fully paid. Any unpaid or partially paid bookings will appear here for manager review and collection follow-up.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action View Explicit Sequence Mappings for Receivables -->
+    <record id="action_pearl_booking_receivables_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_pearl_booking_receivables_list"/>
+        <field name="act_window_id" ref="action_pearl_booking_receivables"/>
+    </record>
+
+    <record id="action_pearl_booking_receivables_pivot" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="view_pearl_booking_receivables_pivot"/>
+        <field name="act_window_id" ref="action_pearl_booking_receivables"/>
+    </record>
+
+    <record id="action_pearl_booking_receivables_graph" model="ir.actions.act_window.view">
+        <field name="sequence" eval="3"/>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_pearl_booking_receivables_graph"/>
+        <field name="act_window_id" ref="action_pearl_booking_receivables"/>
+    </record>
+</odoo>
+

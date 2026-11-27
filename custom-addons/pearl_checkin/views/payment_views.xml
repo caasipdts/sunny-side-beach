@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================ -->
+    <!-- Management Reporting: Financial Collections Analysis        -->
+    <!-- Restricted to Pearl Managers                            -->
+    <!-- ============================================================ -->
+
+    <!-- Collections Reporting Graph View -->
+    <record id="view_pearl_payment_reporting_graph" model="ir.ui.view">
+        <field name="name">pearl.booking.payment.reporting.graph</field>
+        <field name="model">pearl.booking.payment</field>
+        <field name="arch" type="xml">
+            <graph string="Financial Collections Analysis" type="bar" sample="1">
+                <field name="payment_datetime" interval="day"/>
+                <field name="payment_method"/>
+                <field name="amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Collections Reporting Pivot View -->
+    <record id="view_pearl_payment_reporting_pivot" model="ir.ui.view">
+        <field name="name">pearl.booking.payment.reporting.pivot</field>
+        <field name="model">pearl.booking.payment</field>
+        <field name="arch" type="xml">
+            <pivot string="Financial Collections Matrix Analysis" sample="1">
+                <field name="payment_datetime" interval="day" type="row"/>
+                <field name="payment_method" type="row"/>
+                <field name="user_id" type="col"/>
+                <field name="amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Collections Reporting List View -->
+    <record id="view_pearl_payment_reporting_list" model="ir.ui.view">
+        <field name="name">pearl.booking.payment.reporting.list</field>
+        <field name="model">pearl.booking.payment</field>
+        <field name="arch" type="xml">
+            <list string="Financial Collections Analysis" create="0" delete="0" edit="0"
+                  default_order="payment_datetime desc, id desc">
+                <field name="payment_datetime" string="Payment Date &amp; Time"/>
+                <field name="booking_id" string="Booking Reference"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="payment_method" string="Payment Method" widget="badge"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount" string="Amount" widget="monetary" sum="Total Collections"/>
+                <field name="reference" string="Payment Reference"/>
+                <field name="user_id" string="Recorded By"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Collections Dedicated Reporting Search View -->
+    <record id="view_pearl_payment_reporting_search" model="ir.ui.view">
+        <field name="name">pearl.booking.payment.reporting.search</field>
+        <field name="model">pearl.booking.payment</field>
+        <field name="arch" type="xml">
+            <search string="Search Collections Analysis">
+                <field name="reference" string="Payment Reference"/>
+                <field name="booking_id" string="Booking Reference"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="user_id" string="Recorded By"/>
+
+                <!-- Relative & Custom Date Filters based on Payment Datetime -->
+                <filter name="filter_today" string="Today" domain="[('payment_datetime', '&gt;=', 'today'), ('payment_datetime', '&lt;', 'today +1d')]"/>
+                <filter name="filter_yesterday" string="Yesterday" domain="[('payment_datetime', '&gt;=', 'today -1d'), ('payment_datetime', '&lt;', 'today')]"/>
+                <filter name="filter_this_week" string="This Week" domain="[('payment_datetime', '&gt;=', '=week_start'), ('payment_datetime', '&lt;', '=week_start +1w')]"/>
+                <filter name="filter_this_month" string="This Month" domain="[('payment_datetime', '&gt;=', 'today =1d'), ('payment_datetime', '&lt;', 'today =1d +1m')]"/>
+                <filter name="filter_this_year" string="This Year" domain="[('payment_datetime', '&gt;=', 'today =1m =1d'), ('payment_datetime', '&lt;', 'today =1m =1d +1y')]"/>
+                <filter name="filter_payment_date" string="Payment Date" date="payment_datetime"/>
+                <separator/>
+
+                <!-- Payment Method Filters -->
+                <filter string="Cash" name="filter_method_cash" domain="[('payment_method', '=', 'cash')]"/>
+                <filter string="Bank Card" name="filter_method_bank_card" domain="[('payment_method', '=', 'bank_card')]"/>
+                <filter string="Bank Transfer" name="filter_method_bank_transfer" domain="[('payment_method', '=', 'bank_transfer')]"/>
+                <filter string="Other" name="filter_method_other" domain="[('payment_method', '=', 'other')]"/>
+
+                <group>
+                    <filter string="Payment Day" name="group_payment_date_day" context="{'group_by': 'payment_datetime:day'}"/>
+                    <filter string="Payment Month" name="group_payment_date_month" context="{'group_by': 'payment_datetime:month'}"/>
+                    <filter string="Payment Method" name="group_payment_method" context="{'group_by': 'payment_method'}"/>
+                    <filter string="Recorded By" name="group_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Booking Reference" name="group_booking" context="{'group_by': 'booking_id'}"/>
+                    <filter string="Visitor" name="group_visitor" context="{'group_by': 'visitor_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Collections Reporting Action Window (Manager Restricted) -->
+    <record id="action_pearl_payment_reporting" model="ir.actions.act_window">
+        <field name="name">Financial Collections Analysis</field>
+        <field name="res_model">pearl.booking.payment</field>
+        <field name="view_mode">graph,pivot,list,form</field>
+        <field name="search_view_id" ref="view_pearl_payment_reporting_search"/>
+        <field name="context">{'search_default_group_payment_date_day': 1}</field>
+        <field name="group_ids" eval="[(4, ref('pearl_checkin.group_pearl_manager'))]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No payment transactions recorded yet.
+            </p>
+            <p>
+                Use this report to track front-desk revenue collections, payment method distribution,
+                and cashier/staff reconciliation.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action View Explicit Sequence Mappings -->
+    <record id="action_pearl_payment_reporting_graph" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_pearl_payment_reporting_graph"/>
+        <field name="act_window_id" ref="action_pearl_payment_reporting"/>
+    </record>
+
+    <record id="action_pearl_payment_reporting_pivot" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="view_pearl_payment_reporting_pivot"/>
+        <field name="act_window_id" ref="action_pearl_payment_reporting"/>
+    </record>
+
+    <record id="action_pearl_payment_reporting_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="3"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_pearl_payment_reporting_list"/>
+        <field name="act_window_id" ref="action_pearl_payment_reporting"/>
+    </record>
+</odoo>

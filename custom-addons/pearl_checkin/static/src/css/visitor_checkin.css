@@ -1,0 +1,247 @@
+/* ==========================================================================
+   Pearl Restaurant - Visitor Check-in Styles (Beach Club UI Refresh)
+   Aesthetic: Full-Viewport Ambient Background, Clean Inputs, Floating Controls
+   ========================================================================== */
+
+.visitor-checkin-page {
+    box-sizing: border-box;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-image: linear-gradient(rgba(12, 22, 28, 0.48), rgba(12, 22, 28, 0.48)), url('/pearl_checkin/static/src/img/pearl_bg.jpg?v=2');
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.visitor-checkin-shell,
+.visitor-checkin-success-card {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.visitor-checkin-shell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.visitor-checkin-logo {
+    display: block;
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.visitor-checkin-title {
+    color: #f5dfc2;
+    font-size: clamp(1.65rem, 6vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    text-align: center;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    margin: 0 0 20px;
+}
+
+.visitor-checkin-form {
+    width: 100%;
+}
+
+.visitor-checkin-banner {
+    background-color: #dcf0fa;
+    color: #164e63;
+    border: 0;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.visitor-checkin-label {
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: block;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.visitor-checkin-consent {
+    color: #ffffff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.visitor-checkin-control {
+    box-sizing: border-box;
+    min-height: 48px;
+    border: 0 !important;
+    border-radius: 6px;
+    font-size: 16px;
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    padding: 10px 14px;
+}
+
+.visitor-checkin-control:focus {
+    box-shadow: 0 0 0 3px rgba(229, 187, 84, 0.45);
+    outline: none;
+}
+
+.visitor-checkin-phone-row {
+    display: flex;
+    position: relative;
+    width: 100%;
+}
+
+.visitor-checkin-phone-row input[type="tel"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.visitor-checkin-primary {
+    min-height: 48px;
+    padding: 8px 24px;
+    color: #ffffff;
+    background-color: #e5bb54;
+    border: 0;
+    border-radius: 8px;
+    white-space: nowrap;
+    font-weight: 700;
+    font-size: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.15s ease-in-out, transform 0.1s ease;
+    cursor: pointer;
+}
+
+.visitor-checkin-phone-row .visitor-checkin-primary {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-radius: 0 6px 6px 0;
+}
+
+.visitor-checkin-primary:hover,
+.visitor-checkin-primary:focus-visible {
+    color: #ffffff;
+    background-color: #c99e36;
+}
+
+.visitor-checkin-primary:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
+.visitor-checkin-change {
+    min-height: 48px;
+    padding: 8px 16px;
+    color: #ffffff;
+    background-color: #4b5563;
+    border: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    white-space: nowrap;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.visitor-checkin-change:hover {
+    background-color: #374151;
+    color: #ffffff;
+}
+
+.visitor-checkin-form .mb-3 {
+    margin-bottom: 0.9rem !important;
+}
+
+/* Success Card */
+.visitor-checkin-success-card {
+    padding: clamp(30px, 8vw, 48px) 30px;
+    border-radius: 20px;
+    background: #ffffff;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.visitor-checkin-success-card .visitor-checkin-title {
+    color: #00334e;
+    font-size: clamp(1.6rem, 5vw, 2.1rem);
+    text-shadow: none;
+    margin-bottom: 8px;
+}
+
+.visitor-checkin-success-card .visitor-checkin-message {
+    color: #4b5563;
+    font-size: 1.05rem;
+    overflow-wrap: anywhere;
+    margin-bottom: 24px;
+}
+
+.visitor-checkin-success-card .visitor-checkin-primary {
+    border-radius: 8px;
+    padding: 12px 32px;
+    font-size: 16px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+/* Media Queries */
+@media (max-height: 700px) {
+    .visitor-checkin-logo {
+        width: 90px;
+        height: 90px;
+        margin-bottom: 12px;
+    }
+
+    .visitor-checkin-title {
+        font-size: clamp(1.4rem, 5vw, 1.8rem);
+        margin-bottom: 14px;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+    .visitor-checkin-shell,
+    .visitor-checkin-success-card {
+        max-width: 680px;
+    }
+
+    .visitor-checkin-logo {
+        display: none;
+    }
+
+    #newRegistrationFields:not([hidden]) {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 12px;
+        align-items: end;
+    }
+
+    #newRegistrationFields > div:nth-child(3),
+    #newRegistrationFields > div:last-child {
+        grid-column: 1 / -1;
+    }
+}

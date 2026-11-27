@@ -1,21 +1,55 @@
 services:
   db:
-    image: postgres:15-bookworm
+    image: postgres:15
     container_name: odoo-db
+    restart: unless-stopped
     environment:
+      - POSTGRES_DB=postgres
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=odoo
-      - POSTGRES_DB=postgres
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - odoo-db-data:/var/lib/postgresql/data
+
+  web:
+    image: odoo:19.0
+    container_name: odoo-web
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U odoo"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    depends_on:
+      - db
+    ports:
+      - "8069:8069"
+    environment:
+      - HOST=db
+      - USER=odoo
+      - PASSWORD=odoo
+    volumes:
+      - ./custom-addons:/mnt/extra-addons
+      - odoo-web-data:/var/lib/odoo
+    command:
+      - odoo
+      - --database=sunnyside_beach
+      - --init=sunnyside_visitor_management,sunnyside_sync
+      - --without-demo=all
+
+  sync-worker:
+    build:
+      context: ./custom-addons/sunnyside_sync
+      dockerfile: Dockerfile.worker
+    container_name: odoo-sync-worker
+    restart: unless-stopped
+    depends_on:
+      - web
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./worker.ini:/app/worker.ini:ro
+      - ./sync_token.txt:/app/sync_token.txt:ro
+    command:
+      - --config
+      - /app/worker.ini
 
 volumes:
   odoo-db-data:
+  odoo-web-data:

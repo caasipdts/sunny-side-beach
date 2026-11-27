@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Top-Level Root Application Menu -->
+    <menuitem id="menu_pearl_root"
+              name="Pearl Restaurant"
+              sequence="20"
+              groups="group_pearl_user"
+              web_icon="pearl_checkin,static/description/icon.png"/>
+
+    <!-- 1. Management Dashboard (Top Priority Menu) -->
+    <menuitem id="menu_pearl_dashboard"
+              name="Dashboard"
+              parent="menu_pearl_root"
+              action="action_pearl_dashboard"
+              sequence="5"/>
+
+    <!-- 2. Operations Submenu -->
+    <menuitem id="menu_pearl_operations"
+              name="Operations"
+              parent="menu_pearl_root"
+              sequence="10"/>
+
+    <menuitem id="menu_pearl_checkin_wizard"
+              name="New Check-in"
+              parent="menu_pearl_operations"
+              action="action_pearl_checkin_wizard"
+              sequence="5"/>
+
+    <menuitem id="menu_pearl_seating_dashboard"
+              name="Seating Management"
+              parent="menu_pearl_operations"
+              action="action_pearl_seating_dashboard"
+              sequence="7"/>
+
+    <menuitem id="menu_pearl_visits"
+              name="Visits"
+              parent="menu_pearl_operations"
+              action="action_pearl_visit"
+              sequence="10"/>
+
+    <menuitem id="menu_pearl_bookings"
+              name="Bookings"
+              parent="menu_pearl_operations"
+              action="action_pearl_booking"
+              sequence="15"/>
+
+    <menuitem id="menu_pearl_visitors"
+              name="Visitors"
+              parent="menu_pearl_operations"
+              action="action_pearl_visitor"
+              sequence="20"/>
+
+    <!-- 3. Reporting Submenu -->
+    <menuitem id="menu_pearl_reporting"
+              name="Reporting"
+              parent="menu_pearl_root"
+              sequence="50"/>
+
+    <menuitem id="menu_pearl_report_visits"
+              name="Visits Analysis"
+              parent="menu_pearl_reporting"
+              action="action_pearl_visit_reporting"
+              sequence="10"/>
+
+    <menuitem id="menu_pearl_report_bookings"
+              name="Seating &amp; Bookings Analysis"
+              parent="menu_pearl_reporting"
+              action="action_pearl_booking_reporting"
+              sequence="20"/>
+
+    <menuitem id="menu_pearl_report_payments"
+              name="Financial Collections Analysis"
+              parent="menu_pearl_reporting"
+              action="action_pearl_payment_reporting"
+              sequence="30"
+              groups="group_pearl_manager"/>
+
+    <menuitem id="menu_pearl_report_receivables"
+              name="Outstanding Balances &amp; Receivables"
+              parent="menu_pearl_reporting"
+              action="action_pearl_booking_receivables"
+              sequence="40"
+              groups="group_pearl_manager"/>
+
+    <!-- 4. Configuration Submenu (Admin Only) -->
+    <menuitem id="menu_pearl_configuration"
+              name="Configuration"
+              parent="menu_pearl_root"
+              sequence="100"
+              groups="group_pearl_manager"/>
+
+    <menuitem id="menu_pearl_locations"
+              name="Locations"
+              parent="menu_pearl_configuration"
+              action="action_pearl_location"
+              sequence="10"/>
+
+    <menuitem id="menu_pearl_seating_types"
+              name="Seating Types"
+              parent="menu_pearl_configuration"
+              action="action_pearl_seating_type"
+              sequence="15"/>
+
+    <menuitem id="menu_pearl_seating_areas"
+              name="Seating Areas"
+              parent="menu_pearl_configuration"
+              action="action_pearl_seating_area"
+              sequence="25"/>
+
+    <menuitem id="menu_pearl_seating_units"
+              name="Seating Units"
+              parent="menu_pearl_configuration"
+              action="action_pearl_seating_unit"
+              sequence="30"/>
+
+    <menuitem id="menu_pearl_seating_images"
+              name="Seating Photographs"
+              parent="menu_pearl_configuration"
+              action="action_pearl_seating_image"
+              sequence="35"/>
+</odoo>

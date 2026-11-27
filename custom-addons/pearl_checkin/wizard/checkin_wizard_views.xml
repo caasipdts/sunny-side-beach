@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Receptionist Check-in Wizard Form View -->
+    <record id="view_pearl_checkin_wizard_form" model="ir.ui.view">
+        <field name="name">pearl.checkin.wizard.form</field>
+        <field name="model">pearl.checkin.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Front-Desk Check-in">
+                <sheet>
+                    <div class="mb-3">
+                        <h2 class="text-primary mb-1">
+                            <i class="fa fa-id-card-o me-2"></i> Reception Check-in
+                        </h2>
+                        <p class="text-muted small mb-0">
+                            Enter the visitor's phone number. The system will look up returning guests or prompt for new guest details.
+                            Seating assignment and payment capture are optional and can be completed now or later.
+                        </p>
+                    </div>
+
+                    <!-- ============================================================ -->
+                    <!-- Section 1: Visitor Information                               -->
+                    <!-- ============================================================ -->
+                    <group string="Visitor Information">
+                        <group string="Phone Lookup">
+                            <label for="phone" string="Phone Number"/>
+                            <div class="o_row">
+                                <span class="input-group-text p-1 text-muted small">+</span>
+                                <field name="country_dial_code" class="oe_inline" placeholder="234" style="width: 70px !important;"/>
+                                <field name="phone" placeholder="e.g. 0803 123 4567" class="oe_inline"/>
+                            </div>
+                            <field name="is_existing_visitor" invisible="1"/>
+                        </group>
+                        <group string="Source">
+                            <field name="source" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Real-time Guest Status Notification Banner -->
+                    <div class="mb-3">
+                        <field name="visitor_status_banner" widget="html" nolabel="1"/>
+                    </div>
+
+                    <!-- Returning Guest Details -->
+                    <group string="Returning Guest Profile" invisible="not is_existing_visitor">
+                        <field name="visitor_id" readonly="1" options="{'no_open': False}"/>
+                        <field name="location_id" options="{'no_create_edit': True}" placeholder="Update neighbourhood if changed..."/>
+                    </group>
+
+                    <!-- New Guest Registration Fields -->
+                    <group string="New Guest Profile" invisible="is_existing_visitor">
+                        <field name="name" placeholder="e.g. Chioma Adeleke" required="not is_existing_visitor and phone"/>
+                        <field name="location_id" options="{'no_create_edit': True}" placeholder="Select neighbourhood..." required="not is_existing_visitor and phone"/>
+                    </group>
+
+                    <!-- ============================================================ -->
+                    <!-- Section 2: Seating Assignment (optional)                     -->
+                    <!-- ============================================================ -->
+                    <group string="Seating Assignment (Optional)">
+                        <group>
+                            <field name="seating_area_id"
+                                   options="{'no_create': True, 'no_create_edit': True}"
+                                   placeholder="Select seating area…"/>
+                            <field name="seating_unit_id"
+                                   domain="[('active', '=', True), ('area_id', '=', seating_area_id)]"
+                                   options="{'no_create': True, 'no_create_edit': True}"
+                                   placeholder="Select available unit…"
+                                   invisible="not seating_area_id"/>
+                            <field name="guest_count"
+                                   invisible="not seating_unit_id"/>
+                        </group>
+                        <group invisible="not seating_unit_id">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="estimated_price"
+                                   string="Estimated Booking Price"
+                                   widget="monetary"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ============================================================ -->
+                    <!-- Section 3: Payment Capture (optional, only if unit selected) -->
+                    <!-- ============================================================ -->
+                    <group string="Payment" invisible="not seating_unit_id">
+                        <group>
+                            <field name="payment_amount" widget="monetary"/>
+                            <field name="payment_method" invisible="payment_amount == 0"/>
+                            <field name="payment_reference" invisible="payment_amount == 0"
+                                   placeholder="Receipt / bank reference…"/>
+                        </group>
+                        <group>
+                            <field name="estimated_outstanding"
+                                   string="Estimated Outstanding"
+                                   widget="monetary"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+
+                <footer>
+                    <button name="action_confirm_checkin"
+                            string="Confirm Check-in"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-check-circle"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Receptionist Check-in Wizard Window Action (unchanged) -->
+    <record id="action_pearl_checkin_wizard" model="ir.actions.act_window">
+        <field name="name">New Check-in</field>
+        <field name="res_model">pearl.checkin.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

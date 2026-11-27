@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Visit List View (Operational) -->
+    <record id="view_pearl_visit_list" model="ir.ui.view">
+        <field name="name">pearl.visit.list</field>
+        <field name="model">pearl.visit</field>
+        <field name="arch" type="xml">
+            <list string="Beach Visits"
+                  default_order="check_in_datetime desc, id desc"
+                  decoration-success="state == 'checked_in'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name" string="Reference"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="visitor_phone" string="Phone" optional="show"/>
+                <field name="check_in_datetime" string="Check-in Time"/>
+                <field name="location_id" string="Neighbourhood"/>
+                <field name="visitor_location_id" string="Home Area" optional="hide"/>
+                <field name="source" widget="badge"/>
+                <field name="visitor_type" widget="badge"
+                       decoration-info="visitor_type == 'new'"
+                       decoration-success="visitor_type == 'returning'"/>
+                <field name="is_frequent_visitor" string="Frequent" widget="boolean" optional="hide"/>
+                <field name="user_id" string="Recorded By" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'checked_in'"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Visit Form View -->
+    <record id="view_pearl_visit_form" model="ir.ui.view">
+        <field name="name">pearl.visit.form</field>
+        <field name="model">pearl.visit</field>
+        <field name="arch" type="xml">
+            <form string="Beach Visit">
+                <header>
+                    <button name="action_open_seating_dashboard"
+                            string="Assign Seating"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-cubes"
+                            invisible="state != 'checked_in'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="checked_in,cancelled"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Visit Reference"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <field name="visitor_type" widget="badge"
+                                   decoration-info="visitor_type == 'new'"
+                                   decoration-success="visitor_type == 'returning'"/>
+                            <field name="is_frequent_visitor" widget="badge" invisible="not is_frequent_visitor"
+                                   decoration-warning="is_frequent_visitor" string="Frequent Guest"/>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="Visitor Profile">
+                            <field name="visitor_id" options="{'no_quick_create': True}"/>
+                            <field name="visitor_phone"/>
+                            <field name="location_id" options="{'no_create_edit': True}" string="Check-in Neighbourhood"/>
+                            <field name="visitor_location_id" readonly="1" string="Visitor Home Area"/>
+                        </group>
+                        <group string="Check-in Operations">
+                            <field name="check_in_datetime"/>
+                            <field name="source"/>
+                            <field name="user_id" readonly="1"/>
+                            <field name="submission_token" readonly="1" groups="base.group_no_one"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Seating Bookings" name="page_seating_bookings" groups="pearl_checkin.group_pearl_user">
+                            <field name="booking_ids" readonly="1">
+                                <list string="Seating Bookings" create="0" delete="0" default_order="reserved_datetime desc, id desc">
+                                    <field name="name" string="Booking Ref"/>
+                                    <field name="area_id" string="Seating Area"/>
+                                    <field name="unit_id" string="Seating Unit"/>
+                                    <field name="guest_count" string="Guests"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="amount_total" string="Total" widget="monetary"/>
+                                    <field name="amount_paid" string="Paid" widget="monetary"/>
+                                    <field name="amount_due" string="Outstanding" widget="monetary"/>
+                                    <field name="payment_status" widget="badge"
+                                           decoration-success="payment_status == 'paid'"
+                                           decoration-warning="payment_status == 'partial'"
+                                           decoration-danger="payment_status == 'unpaid'"/>
+                                    <field name="state" widget="badge"
+                                           decoration-primary="state == 'reserved'"
+                                           decoration-muted="state == 'released'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Visit Graph View (Trends & Distributions) -->
+    <record id="view_pearl_visit_graph" model="ir.ui.view">
+        <field name="name">pearl.visit.graph</field>
+        <field name="model">pearl.visit</field>
+        <field name="arch" type="xml">
+            <graph string="Visits Analysis" type="bar" sample="1">
+                <field name="check_in_datetime" interval="day"/>
+                <field name="visitor_type"/>
+                <field name="new_visit_count" type="measure"/>
+                <field name="returning_visit_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Visit Pivot View (Management Matrix) -->
+    <record id="view_pearl_visit_pivot" model="ir.ui.view">
+        <field name="name">pearl.visit.pivot</field>
+        <field name="model">pearl.visit</field>
+        <field name="arch" type="xml">
+            <pivot string="Visits Matrix Analysis" sample="1">
+                <field name="check_in_datetime" interval="day" type="row"/>
+                <field name="location_id" type="row"/>
+                <field name="source" type="col"/>
+                <field name="visitor_type" type="col"/>
+                <field name="new_visit_count" type="measure"/>
+                <field name="returning_visit_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Dedicated Reporting List View (Visits Analysis) -->
+    <record id="view_pearl_visit_reporting_list" model="ir.ui.view">
+        <field name="name">pearl.visit.reporting.list</field>
+        <field name="model">pearl.visit</field>
+        <field name="arch" type="xml">
+            <list string="Visits Analysis" create="0" delete="0" edit="0"
+                  default_order="check_in_datetime desc, id desc"
+                  decoration-success="state == 'checked_in'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name" string="Visit Ref"/>
+                <field name="check_in_datetime" string="Check-in Time"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="visitor_phone" string="Phone" optional="show"/>
+                <field name="visitor_location_id" string="Visitor Home Area" optional="show"/>
+                <field name="location_id" string="Check-in Neighbourhood"/>
+                <field name="source" string="Source" widget="badge"/>
+                <field name="visitor_type" string="Visitor Type" widget="badge"
+                       decoration-info="visitor_type == 'new'"
+                       decoration-success="visitor_type == 'returning'"/>
+                <field name="is_frequent_visitor" string="Frequent Guest" widget="boolean" optional="show"/>
+                <field name="visitor_visit_count" string="Lifetime Visits" optional="show"/>
+                <field name="user_id" string="Recorded By" optional="show"/>
+                <field name="state" string="Status" widget="badge"
+                       decoration-success="state == 'checked_in'"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Visit Search View with Comprehensive Filters and Grouping -->
+    <record id="view_pearl_visit_search" model="ir.ui.view">
+        <field name="name">pearl.visit.search</field>
+        <field name="model">pearl.visit</field>
+        <field name="arch" type="xml">
+            <search string="Search Visits">
+                <field name="name" string="Reference"/>
+                <field name="visitor_id" string="Visitor"/>
+                <field name="visitor_phone" string="Phone Number"/>
+                <field name="location_id" string="Check-in Neighbourhood"/>
+                <field name="visitor_location_id" string="Visitor Home Area"/>
+                <field name="user_id" string="Recorded By"/>
+
+                <!-- Status Filters -->
+                <filter string="Checked In" name="filter_checked_in" domain="[('state', '=', 'checked_in')]"/>
+                <filter string="Cancelled" name="filter_cancelled" domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+
+                <!-- Relative & Custom Date Filters -->
+                <filter name="filter_today" string="Today" domain="[('check_in_datetime', '&gt;=', 'today'), ('check_in_datetime', '&lt;', 'today +1d')]"/>
+                <filter name="filter_yesterday" string="Yesterday" domain="[('check_in_datetime', '&gt;=', 'today -1d'), ('check_in_datetime', '&lt;', 'today')]"/>
+                <filter name="filter_this_week" string="This Week" domain="[('check_in_datetime', '&gt;=', '=week_start'), ('check_in_datetime', '&lt;', '=week_start +1w')]"/>
+                <filter name="filter_this_month" string="This Month" domain="[('check_in_datetime', '&gt;=', 'today =1d'), ('check_in_datetime', '&lt;', 'today =1d +1m')]"/>
+                <filter name="filter_this_year" string="This Year" domain="[('check_in_datetime', '&gt;=', 'today =1m =1d'), ('check_in_datetime', '&lt;', 'today =1m =1d +1y')]"/>
+                <filter name="filter_check_in_date" string="Check-in Date" date="check_in_datetime"/>
+                <separator/>
+
+                <!-- Visitor Type & Segmentation Filters -->
+                <filter string="New Visitors (First-Time)" name="filter_new_visitors" domain="[('visitor_type', '=', 'new')]"/>
+                <filter string="Returning Visitors" name="filter_returning_visitors" domain="[('visitor_type', '=', 'returning')]"/>
+                <filter string="Frequent Visitors (3+ Visits)" name="filter_frequent_visitors" domain="[('is_frequent_visitor', '=', True)]"/>
+                <filter string="Single-Visit Visitors" name="filter_single_visit" domain="[('visitor_visit_count', '=', 1)]"/>
+                <separator/>
+
+                <!-- Source Filters -->
+                <filter string="Source: QR Code" name="filter_source_qr" domain="[('source', '=', 'qr_code')]"/>
+                <filter string="Source: Website" name="filter_source_website" domain="[('source', '=', 'website')]"/>
+                <filter string="Source: Receptionist" name="filter_source_receptionist" domain="[('source', '=', 'receptionist')]"/>
+
+                <group>
+                    <filter string="Check-in Day" name="group_by_date_day" context="{'group_by': 'check_in_datetime:day'}"/>
+                    <filter string="Check-in Week" name="group_by_date_week" context="{'group_by': 'check_in_datetime:week'}"/>
+                    <filter string="Check-in Month" name="group_by_date_month" context="{'group_by': 'check_in_datetime:month'}"/>
+                    <filter string="Check-in Year" name="group_by_date_year" context="{'group_by': 'check_in_datetime:year'}"/>
+                    <filter string="Visitor Type" name="group_by_visitor_type" context="{'group_by': 'visitor_type'}"/>
+                    <filter string="Neighbourhood" name="group_by_location" context="{'group_by': 'location_id'}"/>
+                    <filter string="Visitor Home Area" name="group_by_visitor_location" context="{'group_by': 'visitor_location_id'}"/>
+                    <filter string="Check-in Source" name="group_by_source" context="{'group_by': 'source'}"/>
+                    <filter string="Visitor" name="group_by_visitor" context="{'group_by': 'visitor_id'}"/>
+                    <filter string="Recorded By" name="group_by_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Visit Action Window (Operational View) -->
+    <record id="action_pearl_visit" model="ir.actions.act_window">
+        <field name="name">Visits</field>
+        <field name="res_model">pearl.visit</field>
+        <field name="view_mode">list,form,graph,pivot</field>
+        <field name="search_view_id" ref="view_pearl_visit_search"/>
+        <field name="context">{'search_default_filter_checked_in': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Record the first beach visit!
+            </p>
+            <p>
+                Visits track intentional check-ins at Pearl Restaurant, timestamping entry and associating each visit with the visitor profile.
+            </p>
+        </field>
+    </record>
+
+    <!-- Visits Reporting Action (Management Analytics) -->
+    <record id="action_pearl_visit_reporting" model="ir.actions.act_window">
+        <field name="name">Visits Analysis</field>
+        <field name="res_model">pearl.visit</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="search_view_id" ref="view_pearl_visit_search"/>
+        <field name="context">{'search_default_filter_checked_in': 1, 'search_default_group_by_date_day': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No visit statistics available yet.
+            </p>
+            <p>
+                Use this reporting view to analyze check-in volume, peak attendance days, neighbourhood demographics, and check-in channel trends.
+            </p>
+        </field>
+    </record>
+
+    <!-- Bind Views to Visits Reporting Action -->
+    <record id="action_pearl_visit_reporting_view_graph" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_pearl_visit_graph"/>
+        <field name="act_window_id" ref="action_pearl_visit_reporting"/>
+    </record>
+
+    <record id="action_pearl_visit_reporting_view_pivot" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="view_pearl_visit_pivot"/>
+        <field name="act_window_id" ref="action_pearl_visit_reporting"/>
+    </record>
+
+    <record id="action_pearl_visit_reporting_view_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="3"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_pearl_visit_reporting_list"/>
+        <field name="act_window_id" ref="action_pearl_visit_reporting"/>
+    </record>
+</odoo>

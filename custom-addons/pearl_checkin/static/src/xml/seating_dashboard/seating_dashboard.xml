@@ -1,0 +1,756 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="pearl_checkin.SeatingDashboard">
+        <div class="o_pearl_seating_dashboard">
+
+            <!-- =============================================================
+                 1. Header Bar
+                 ============================================================= -->
+            <header class="dashboard-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <div>
+                        <i class="fa fa-sun-o"/> Pearl Restaurant
+                    </div>
+                    <h1 class="dashboard-title"> 
+                        <i/> Seating Management
+                    </h1>
+                    <p class="dashboard-subtitle">
+                        Live beach seating inventory, visitor assignment, and payment management.
+                    </p>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <div class="header-availability-badge">
+                        <i class="fa fa-check-circle"/>
+                        <span><t t-esc="state.metrics.available_units"/> / <t t-esc="state.metrics.total_units"/> Available</span>
+                    </div>
+
+                    <button class="btn btn-outline-secondary d-flex align-items-center gap-2"
+                            t-on-click="refresh"
+                            title="Refresh live availability">
+                        <i class="fa fa-refresh" t-att-class="{'fa-spin': state.loading}"/>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- =============================================================
+                 Context Visitor / Visit Banner (Workflows A & B)
+                 ============================================================= -->
+            <div t-if="state.contextVisitorName or state.contextVisitName" class="dashboard-context-banner d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="context-badge"><i class="fa fa-user-circle me-1"/> Context Guest</span>
+                    <span>
+                        Assigning seating for <strong><t t-esc="state.contextVisitorName"/></strong>
+                        <t t-if="state.contextVisitName"> (Visit: <strong><t t-esc="state.contextVisitName"/></strong>)</t>
+                    </span>
+                </div>
+                <button class="btn-clear-context" t-on-click="clearContext" title="Clear guest context">
+                    <i class="fa fa-times me-1"/> Clear Context
+                </button>
+            </div>
+
+            <!-- =============================================================
+                 2. Summary KPI Metric Cards
+                 ============================================================= -->
+            <section class="dashboard-metrics">
+                <div class="row g-3">
+                    <!-- Metric 1: Total Units -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="metric-card metric-total d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="metric-label">Total Seating Units</span>
+                                <div class="metric-value"><t t-esc="state.metrics.total_units"/></div>
+                            </div>
+                            <div class="metric-icon">
+                                <i class="fa fa-th-large"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 2: Available Units -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="metric-card metric-available d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="metric-label">Available Now</span>
+                                <div class="metric-value text-success"><t t-esc="state.metrics.available_units"/></div>
+                            </div>
+                            <div class="metric-icon">
+                                <i class="fa fa-check-circle"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 3: Reserved Units -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="metric-card metric-reserved d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="metric-label">Reserved Units</span>
+                                <div class="metric-value text-warning"><t t-esc="state.metrics.reserved_units"/></div>
+                            </div>
+                            <div class="metric-icon">
+                                <i class="fa fa-calendar-check-o"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 4: Seating Areas -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="metric-card metric-areas d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="metric-label">Active Beach Zones</span>
+                                <div class="metric-value text-primary"><t t-esc="state.metrics.total_areas"/></div>
+                            </div>
+                            <div class="metric-icon">
+                                <i class="fa fa-map-marker"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 3. Controls: Areas, Search, and Filters
+                 ============================================================= -->
+            <section class="dashboard-controls">
+                <!-- Seating Area Navigation Tabs -->
+                <div class="area-nav-pills">
+                    <button class="area-pill"
+                            t-att-class="{'active': state.selectedAreaId === null}"
+                            t-on-click="() => this.selectArea(null)">
+                        <span>All Areas</span>
+                        <span class="pill-count" t-att-class="{'active-count': state.selectedAreaId === null}">
+                            <t t-esc="state.units.length"/>
+                        </span>
+                    </button>
+
+                    <t t-foreach="state.areas" t-as="area" t-key="area.id">
+                        <button class="area-pill"
+                                t-att-class="{'active': state.selectedAreaId === area.id}"
+                                t-on-click="() => this.selectArea(area.id)">
+                            <t t-esc="area.name"/>
+                        </button>
+                    </t>
+                </div>
+
+                <!-- Search and Filters Bar -->
+                <div class="filter-row">
+                    <div class="search-input-wrapper">
+                        <i class="fa fa-search"/>
+                        <input type="text"
+                               class="form-control"
+                               placeholder="Search seating unit, area, or guest name..."
+                               t-model="state.searchQuery"/>
+                    </div>
+
+                    <!-- Availability Filter -->
+                    <select class="form-select filter-select" t-model="state.statusFilter">
+                        <option value="all">All Statuses</option>
+                        <option value="available">Available Only</option>
+                        <option value="reserved">Reserved Only</option>
+                    </select>
+
+                    <!-- Seating Type Filter -->
+                    <select class="form-select filter-select" t-model="state.typeFilter">
+                        <option value="all">All Seating Types</option>
+                        <t t-foreach="state.seatingTypes" t-as="seatingType" t-key="seatingType.code">
+                            <option t-att-value="seatingType.code"><t t-esc="seatingType.name"/></option>
+                        </t>
+                    </select>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 4. Visual Seating Board Grid
+                 ============================================================= -->
+            <section class="dashboard-board">
+                <!-- Loading State -->
+                <div t-if="state.loading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading seating data...</span>
+                    </div>
+                    <p class="text-muted mt-2">Checking live seating availability...</p>
+                </div>
+
+                <!-- Empty State: No Units in Catalog -->
+                <div t-elif="state.units.length === 0" class="dashboard-empty-state">
+                    <div class="empty-icon"><i class="fa fa-umbrella"/></div>
+                    <h3>No Seating Units Configured</h3>
+                    <p>There are no active beach seating units in the catalogue yet. Managers can configure seating areas and units in Configuration > Seating.</p>
+                </div>
+
+                <!-- Empty State: Filter Returned No Match -->
+                <div t-elif="filteredUnits.length === 0" class="dashboard-empty-state">
+                    <div class="empty-icon"><i class="fa fa-filter"/></div>
+                    <h3>No Units Match Your Filters</h3>
+                    <p>Try clearing your search query or selecting a different status/area filter.</p>
+                    <button class="btn btn-sm btn-outline-primary" t-on-click="() => { this.state.searchQuery = ''; this.state.statusFilter = 'all'; this.state.typeFilter = 'all'; this.state.selectedAreaId = null; }">
+                        Reset All Filters
+                    </button>
+                </div>
+
+                <!-- Responsive Card Grid -->
+                <div t-else="" class="row g-3">
+                    <t t-foreach="filteredUnits" t-as="unit" t-key="unit.id">
+                        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                            <div class="seating-card h-100"
+                                 t-att-class="{'card-available': !unit.is_reserved, 'card-reserved': unit.is_reserved}">
+
+                                <!-- Card Visual Header -->
+                                <div class="card-header-visual"
+                                     t-att-class="{'has-photo': unit.image_url}"
+                                     t-att-style="unit.image_url ? ('background-image: url(' + unit.image_url + ')') : ''">
+
+                                    <i t-if="!unit.image_url" class="visual-icon fa" t-att-class="getSeatingTypeIcon(unit.seating_type)"/>
+
+                                    <!-- Status Badge Overlay -->
+                                    <span t-if="!unit.is_reserved" class="status-badge-overlay badge-available">
+                                        <i class="fa fa-circle text-success"/> Available
+                                    </span>
+                                    <span t-else="" class="status-badge-overlay badge-reserved">
+                                        <i class="fa fa-circle text-warning"/> Reserved
+                                    </span>
+
+                                    <!-- Type Tag -->
+                                    <span class="type-tag">
+                                        <t t-esc="unit.seating_type_label"/>
+                                    </span>
+                                </div>
+
+                                <!-- Card Body -->
+                                <div class="card-body">
+                                    <div class="unit-name"><t t-esc="unit.name"/></div>
+                                    <div class="unit-area"><i class="fa fa-map-marker me-1"/> <t t-esc="unit.area_name"/></div>
+
+                                    <!-- Unit Specifications -->
+                                    <ul class="unit-spec-list">
+                                        <li>
+                                            <span class="spec-label">Capacity:</span>
+                                            <span class="spec-value">
+                                                <t t-if="unit.capacity_min === unit.capacity_max">
+                                                    <t t-esc="unit.capacity_max"/> guest
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-esc="unit.capacity_min"/>–<t t-esc="unit.capacity_max"/> guests
+                                                </t>
+                                            </span>
+                                        </li>
+                                        <li>
+                                            <span class="spec-label">Rate:</span>
+                                            <span class="spec-value text-primary">
+                                                <t t-if="unit.pricing_mode === 'fixed'">
+                                                    <t t-esc="formatCurrency(unit.fixed_price)"/> flat
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-esc="formatCurrency(unit.price_per_guest)"/> / guest
+                                                </t>
+                                            </span>
+                                        </li>
+                                    </ul>
+
+                                    <!-- Reserved Booking Info Snippet -->
+                                    <div t-if="unit.is_reserved and unit.booking" class="active-reservation-block">
+                                        <span class="res-guest-name">
+                                            <i class="fa fa-user me-1"/> <t t-esc="unit.booking.visitor_name"/>
+                                        </span>
+                                        <div class="res-details mt-1 d-flex justify-content-between align-items-center">
+                                            <span><t t-esc="unit.booking.guest_count"/> guests (<t t-esc="unit.booking.name"/>)</span>
+                                            <span class="badge"
+                                                  t-att-class="{
+                                                      'text-bg-success': unit.booking.payment_status === 'paid',
+                                                      'text-bg-warning': unit.booking.payment_status === 'partial',
+                                                      'text-bg-danger': unit.booking.payment_status === 'unpaid'
+                                                  }">
+                                                <t t-esc="unit.booking.payment_status"/>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card Actions -->
+                                    <div class="card-actions">
+                                        <button t-if="!unit.is_reserved"
+                                                class="btn btn-primary w-100"
+                                                t-on-click="() => this.openBookingModal(unit)">
+                                            <i class="fa fa-plus-circle"/> Assign Seating
+                                        </button>
+
+                                        <t t-else="">
+                                            <button class="btn btn-outline-primary flex-grow-1"
+                                                    t-on-click="() => this.openDetailsModal(unit)">
+                                                <i class="fa fa-info-circle"/> Details
+                                            </button>
+                                            <button t-if="unit.booking and unit.booking.payment_status !== 'paid'"
+                                                    class="btn btn-outline-success"
+                                                    t-on-click="() => this.openPaymentModal(unit.booking)"
+                                                    title="Record Payment">
+                                                <i class="fa fa-money"/>
+                                            </button>
+                                            <button class="btn btn-outline-danger"
+                                                    t-on-click="() => this.openReleaseModal(unit.booking, unit)"
+                                                    title="Release Reservation">
+                                                <i class="fa fa-unlock"/>
+                                            </button>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 MODAL 1: Booking Creation Dialog
+                 ============================================================= -->
+            <div t-if="state.activeModal === 'booking' and state.selectedUnit" class="seating-modal-backdrop">
+                <div class="seating-modal-dialog dialog-lg">
+                    <div class="modal-header-custom">
+                        <h4>
+                            <i class="fa fa-calendar-plus-o text-primary"/>
+                            Reserve <t t-esc="state.selectedUnit.name"/> (<t t-esc="state.selectedUnit.area_name"/>)
+                        </h4>
+                        <button class="btn-close-custom" t-on-click="closeModal">X</button>
+                    </div>
+
+                    <div class="modal-body-custom">
+                        <!-- Unit Summary Strip -->
+                        <div class="alert alert-light border d-flex justify-content-between align-items-center py-2 px-3 mb-3">
+                            <div>
+                                <span class="badge bg-secondary me-2"><t t-esc="state.selectedUnit.seating_type_label"/></span>
+                                <span>Capacity: <strong><t t-esc="state.selectedUnit.capacity_min"/>–<t t-esc="state.selectedUnit.capacity_max"/> guests</strong></span>
+                            </div>
+                            <div class="fw-bold text-primary">
+                                <t t-if="state.selectedUnit.pricing_mode === 'fixed'">
+                                    Fixed Rate: <t t-esc="formatCurrency(state.selectedUnit.fixed_price)"/>
+                                </t>
+                                <t t-else="">
+                                    <t t-esc="formatCurrency(state.selectedUnit.price_per_guest)"/> / guest
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Step 1: Select Checked-in Visit -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Select Checked-in Visitor &amp; Visit *</label>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text"><i class="fa fa-search"/></span>
+                                <input type="text"
+                                       class="form-control"
+                                       placeholder="Filter by visitor name, phone, or visit reference..."
+                                       t-model="state.bookingForm.visitorSearch"
+                                       t-on-input="searchEligibleVisits"/>
+                            </div>
+
+                            <!-- List of Eligible Checked-in Visits -->
+                            <div class="border rounded p-2 bg-light" style="max-height: 180px; overflow-y: auto;">
+                                <div t-if="state.bookingForm.loadingVisits" class="text-center py-2 text-muted">
+                                    <i class="fa fa-spinner fa-spin me-1"/> Searching checked-in visits...
+                                </div>
+                                <div t-elif="state.bookingForm.eligibleVisits.length === 0" class="text-center py-3 text-muted">
+                                    <i class="fa fa-exclamation-circle me-1"/> No eligible checked-in visits found.
+                                    <small class="d-block text-secondary mt-1">Visitors must check in at reception or via QR code before seating can be assigned.</small>
+                                </div>
+                                <div t-else="" class="list-group list-group-flush">
+                                    <t t-foreach="state.bookingForm.eligibleVisits" t-as="visit" t-key="visit.id">
+                                        <button type="button"
+                                                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2"
+                                                t-att-class="{'active': state.bookingForm.visitId === visit.id}"
+                                                t-on-click="() => this.onSelectVisit(visit)">
+                                            <div>
+                                                <strong><t t-esc="visit.visitor_name"/></strong>
+                                                <small class="d-block" t-att-class="state.bookingForm.visitId === visit.id ? 'text-white-50' : 'text-muted'">
+                                                    <i class="fa fa-phone me-1"/> <t t-esc="visit.visitor_phone || 'No phone'"/> |
+                                                    <i class="fa fa-ticket me-1"/> <t t-esc="visit.name"/> |
+                                                    <t t-esc="visit.check_in_datetime"/>
+                                                </small>
+                                            </div>
+                                            <span t-if="state.bookingForm.visitId === visit.id" class="badge bg-light text-dark">
+                                                Selected
+                                            </span>
+                                        </button>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Guest Count & Estimated Price -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold">Guest Count *</label>
+                                <input type="number"
+                                       class="form-control"
+                                       t-att-min="state.selectedUnit.capacity_min || 1"
+                                       t-att-max="state.selectedUnit.capacity_max || 9"
+                                       t-att-value="state.bookingForm.guestCount"
+                                       t-on-change="(e) => this.onGuestCountChange(e.target.value)"/>
+                                <small class="text-muted">
+                                    Permitted: <t t-esc="state.selectedUnit.capacity_min"/>–<t t-esc="state.selectedUnit.capacity_max"/> guests
+                                </small>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold">Calculated Total</label>
+                                <div class="form-control bg-light fw-bold text-success fs-5">
+                                    <t t-esc="formatCurrency(getEstimatedBookingPrice(state.selectedUnit, state.bookingForm.guestCount))"/>
+                                </div>
+                                <small class="text-muted">Authoritative price calculated by server</small>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Optional Immediate Payment -->
+                        <div class="card border-0 bg-light p-3 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="checkRecordPayment"
+                                       t-att-checked="state.bookingForm.recordPaymentNow"
+                                       t-on-change="(e) => this.onToggleRecordPayment(e.target.checked)"/>
+                                <label class="form-check-label fw-bold" for="checkRecordPayment">
+                                    Record Payment Now (Zero, Partial, or Full)
+                                </label>
+                            </div>
+
+                            <div t-if="state.bookingForm.recordPaymentNow" class="mt-3">
+                                <div class="row g-2">
+                                    <div class="col-sm-4">
+                                        <label class="form-label small fw-semibold">Amount</label>
+                                        <input type="number"
+                                               class="form-control"
+                                               t-model="state.bookingForm.paymentAmount"/>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <label class="form-label small fw-semibold">Method</label>
+                                        <select class="form-select" t-model="state.bookingForm.paymentMethod">
+                                            <option value="cash">Cash</option>
+                                            <option value="bank_card">Bank Card / POS</option>
+                                            <option value="bank_transfer">Bank Transfer</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <label class="form-label small fw-semibold">Reference (optional)</label>
+                                        <input type="text"
+                                               class="form-control"
+                                               placeholder="POS slip / transfer ref"
+                                               t-model="state.bookingForm.paymentReference"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Error Banner -->
+                        <div t-if="state.bookingForm.formError" class="alert alert-danger py-2 px-3 mb-0">
+                            <i class="fa fa-exclamation-triangle me-1"/> <t t-esc="state.bookingForm.formError"/>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer-custom">
+                        <button type="button" class="btn btn-secondary" t-on-click="closeModal" t-att-disabled="state.bookingForm.submitting">
+                            Cancel
+                        </button>
+                        <button type="button"
+                                class="btn btn-primary d-flex align-items-center gap-2"
+                                t-on-click="submitBooking"
+                                t-att-disabled="state.bookingForm.submitting or !state.bookingForm.visitId">
+                            <i class="fa fa-check"/>
+                            <span t-if="state.bookingForm.submitting">Reserving...</span>
+                            <span t-else="">Confirm Reservation</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =============================================================
+                 MODAL 2: Booking Details Modal
+                 ============================================================= -->
+            <div t-if="state.activeModal === 'details' and state.selectedBooking" class="seating-modal-backdrop">
+                <div class="seating-modal-dialog dialog-lg">
+                    <div class="modal-header-custom">
+                        <h4>
+                            <i class="fa fa-ticket text-primary"/>
+                            Booking <t t-esc="state.selectedBooking.name"/> — <t t-esc="state.selectedUnit.name"/>
+                        </h4>
+                        <button class="btn-close-custom" t-on-click="closeModal">X</button>
+                    </div>
+
+                    <div class="modal-body-custom">
+                        <!-- Visitor & Check-in Summary -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <div class="p-3 bg-light rounded">
+                                    <span class="text-muted small text-uppercase fw-bold">Visitor Information</span>
+                                    <h5 class="mt-1 mb-0">
+                                        <a href="#" class="text-decoration-none" t-on-click.prevent="() => this.openVisitorRecord(state.selectedBooking.visitor_id)">
+                                            <t t-esc="state.selectedBooking.visitor_name"/> <i class="fa fa-external-link small"/>
+                                        </a>
+                                    </h5>
+                                    <div class="text-muted small mt-1">
+                                        <i class="fa fa-phone me-1"/> <t t-esc="state.selectedBooking.visitor_phone || 'N/A'"/>
+                                    </div>
+                                    <div class="text-muted small">
+                                        Visit Ref:
+                                        <a href="#" class="text-decoration-none" t-on-click.prevent="() => this.openVisitRecord(state.selectedBooking.visit_id)">
+                                            <t t-esc="state.selectedBooking.visit_name"/>
+                                        </a>
+                                        (<t t-esc="state.selectedBooking.visit_check_in"/>)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6">
+                                <div class="p-3 bg-light rounded">
+                                    <span class="text-muted small text-uppercase fw-bold">Reservation Details</span>
+                                    <div class="mt-1">
+                                        Area: <strong><t t-esc="state.selectedUnit.area_name"/></strong> |
+                                        Unit: <strong><t t-esc="state.selectedUnit.name"/></strong>
+                                    </div>
+                                    <div class="text-muted small mt-1">
+                                        Guests: <strong><t t-esc="state.selectedBooking.guest_count"/></strong> |
+                                        Type: <t t-esc="state.selectedBooking.seating_type"/>
+                                    </div>
+                                    <div class="text-muted small">
+                                        Reserved by: <t t-esc="state.selectedBooking.reserved_by_name"/> at <t t-esc="state.selectedBooking.reserved_datetime"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financial Snapshot Cards -->
+                        <div class="row g-2 mb-3 text-center">
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block text-uppercase">Total Amount</small>
+                                    <strong class="fs-5 text-dark"><t t-esc="formatCurrency(state.selectedBooking.amount_total)"/></strong>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block text-uppercase">Amount Paid</small>
+                                    <strong class="fs-5 text-success"><t t-esc="formatCurrency(state.selectedBooking.amount_paid)"/></strong>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block text-uppercase">Outstanding Due</small>
+                                    <strong class="fs-5" t-att-class="state.selectedBooking.amount_due > 0 ? 'text-danger' : 'text-muted'">
+                                        <t t-esc="formatCurrency(state.selectedBooking.amount_due)"/>
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment History Table -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold mb-0">Payment History (<t t-esc="state.selectedBooking.payments.length"/>)</h6>
+                                <span class="badge"
+                                      t-att-class="{
+                                          'text-bg-success': state.selectedBooking.payment_status === 'paid',
+                                          'text-bg-warning': state.selectedBooking.payment_status === 'partial',
+                                          'text-bg-danger': state.selectedBooking.payment_status === 'unpaid'
+                                      }">
+                                    <t t-esc="state.selectedBooking.payment_status"/>
+                                </span>
+                            </div>
+
+                            <table t-if="state.selectedBooking.payments.length > 0" class="table table-sm table-striped border">
+                                <thead>
+                                    <tr>
+                                        <th>Date &amp; Time</th>
+                                        <th>Amount</th>
+                                        <th>Method</th>
+                                        <th>Reference</th>
+                                        <th>Cashier</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.selectedBooking.payments" t-as="p" t-key="p.id">
+                                        <tr>
+                                            <td><t t-esc="p.payment_datetime"/></td>
+                                            <td class="fw-bold text-success"><t t-esc="formatCurrency(p.amount)"/></td>
+                                            <td><t t-esc="p.payment_method_label"/></td>
+                                            <td><t t-esc="p.reference || '—'"/></td>
+                                            <td><t t-esc="p.user_name"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                            <p t-else="" class="text-muted small fst-italic">No payments recorded against this booking yet.</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer-custom justify-content-between">
+                        <div>
+                            <button type="button"
+                                    class="btn btn-outline-danger me-2"
+                                    t-on-click="() => this.openReleaseModal(state.selectedBooking, state.selectedUnit)">
+                                <i class="fa fa-unlock me-1"/> Release Seating
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    t-on-click="() => this.openBookingRecord(state.selectedBooking.id)">
+                                <i class="fa fa-external-link me-1"/> Open Booking Form
+                            </button>
+                        </div>
+
+                        <div>
+                            <button t-if="state.selectedBooking.payment_status !== 'paid'"
+                                    type="button"
+                                    class="btn btn-success me-2"
+                                    t-on-click="() => this.openPaymentModal(state.selectedBooking)">
+                                <i class="fa fa-money me-1"/> Record Payment
+                            </button>
+                            <button type="button" class="btn btn-secondary" t-on-click="closeModal">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =============================================================
+                 MODAL 3: Payment Capture Modal
+                 ============================================================= -->
+            <div t-if="state.activeModal === 'payment' and state.selectedBooking" class="seating-modal-backdrop">
+                <div class="seating-modal-dialog">
+                    <div class="modal-header-custom">
+                        <h4>
+                            <i class="fa fa-money text-success"/>
+                            Record Payment — <t t-esc="state.selectedBooking.name"/>
+                        </h4>
+                        <button class="btn-close-custom" t-on-click="closeModal">X</button>
+                    </div>
+
+                    <div class="modal-body-custom">
+                        <!-- Balance Overview -->
+                        <div class="alert alert-light border d-flex justify-content-between align-items-center py-2 px-3 mb-3">
+                            <div>
+                                <small class="text-muted d-block">Outstanding Balance</small>
+                                <strong class="fs-4 text-danger"><t t-esc="formatCurrency(state.selectedBooking.amount_due)"/></strong>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted d-block">Booking Total</small>
+                                <span class="fw-bold"><t t-esc="formatCurrency(state.selectedBooking.amount_total)"/></span>
+                            </div>
+                        </div>
+
+                        <!-- Quick Pay Buttons -->
+                        <div class="d-flex gap-2 mb-3">
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary flex-grow-1"
+                                    t-on-click="() => this.setQuickPayment(state.selectedBooking.amount_due)">
+                                Pay Full (<t t-esc="formatCurrency(state.selectedBooking.amount_due)"/>)
+                            </button>
+                            <button t-if="state.selectedBooking.amount_due > 1000"
+                                    type="button"
+                                    class="btn btn-sm btn-outline-secondary flex-grow-1"
+                                    t-on-click="() => this.setQuickPayment(Math.round(state.selectedBooking.amount_due / 2))">
+                                Pay Half (<t t-esc="formatCurrency(Math.round(state.selectedBooking.amount_due / 2))"/>)
+                            </button>
+                        </div>
+
+                        <!-- Payment Fields -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Amount to Pay *</label>
+                            <input type="number"
+                                   class="form-control form-control-lg fw-bold text-success"
+                                   t-model="state.paymentForm.amount"
+                                   t-att-max="state.selectedBooking.amount_due"/>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Payment Method *</label>
+                            <select class="form-select" t-model="state.paymentForm.paymentMethod">
+                                <option value="cash">Cash</option>
+                                <option value="bank_card">Bank Card / POS</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Payment Reference / Note</label>
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="e.g. POS Slip #4421, Transfer ref"
+                                   t-model="state.paymentForm.paymentReference"/>
+                        </div>
+
+                        <!-- Form Error Banner -->
+                        <div t-if="state.paymentForm.formError" class="alert alert-danger py-2 px-3 mb-0">
+                            <i class="fa fa-exclamation-triangle me-1"/> <t t-esc="state.paymentForm.formError"/>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer-custom">
+                        <button type="button" class="btn btn-secondary" t-on-click="closeModal" t-att-disabled="state.paymentForm.submitting">
+                            Cancel
+                        </button>
+                        <button type="button"
+                                class="btn btn-success d-flex align-items-center gap-2"
+                                t-on-click="submitPayment"
+                                t-att-disabled="state.paymentForm.submitting or !state.paymentForm.amount">
+                            <i class="fa fa-check"/>
+                            <span t-if="state.paymentForm.submitting">Recording...</span>
+                            <span t-else="">Confirm Payment</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =============================================================
+                 MODAL 4: Manual Release Confirmation Modal
+                 ============================================================= -->
+            <div t-if="state.activeModal === 'release' and state.releaseForm.bookingId" class="seating-modal-backdrop">
+                <div class="seating-modal-dialog">
+                    <div class="modal-header-custom bg-danger-subtle">
+                        <h4 class="text-danger">
+                            <i class="fa fa-exclamation-triangle"/>
+                            Release Seating Reservation
+                        </h4>
+                        <button class="btn-close-custom" t-on-click="closeModal">X</button>
+                    </div>
+
+                    <div class="modal-body-custom">
+                        <p class="mb-3">
+                            Are you sure you want to release the reservation for <strong><t t-esc="state.releaseForm.unitName"/></strong>?
+                        </p>
+                        <div class="alert alert-warning py-2 px-3 mb-3">
+                            <i class="fa fa-info-circle me-1"/>
+                            Releasing this reservation will mark it as completed/released and make the seating unit immediately available for other guests.
+                        </div>
+
+                        <div t-if="state.releaseForm.amountDue > 0" class="alert alert-danger py-2 px-3 mb-3">
+                            <i class="fa fa-money me-1"/>
+                            <strong>Unpaid Balance:</strong> This booking still has an outstanding balance of
+                            <strong><t t-esc="formatCurrency(state.releaseForm.amountDue)"/></strong>.
+                        </div>
+
+                        <!-- Form Error Banner -->
+                        <div t-if="state.releaseForm.formError" class="alert alert-danger py-2 px-3 mb-0">
+                            <i class="fa fa-exclamation-triangle me-1"/> <t t-esc="state.releaseForm.formError"/>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer-custom">
+                        <button type="button" class="btn btn-secondary" t-on-click="closeModal" t-att-disabled="state.releaseForm.submitting">
+                            Cancel
+                        </button>
+                        <button type="button"
+                                class="btn btn-danger d-flex align-items-center gap-2"
+                                t-on-click="submitRelease"
+                                t-att-disabled="state.releaseForm.submitting">
+                            <i class="fa fa-unlock"/>
+                            <span t-if="state.releaseForm.submitting">Releasing...</span>
+                            <span t-else="">Yes, Release Reservation</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </t>
+
+</templates>
+
