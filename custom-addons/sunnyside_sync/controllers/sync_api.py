@@ -44,7 +44,7 @@ class SunnysideSyncController(http.Controller):
         '/sunnyside_sync/status',
         type='http',
         auth='user',
-        methods=['GET'],
+        methods=['GET', 'POST'],
         csrf=False,
         save_session=False,
     )
